@@ -5,3 +5,773 @@
   publisher = {GitHub},
   url       = {https://github.com/airas-org/airas}
 }
+
+% ===========================================
+% REQUIRED CITATIONS
+% These papers must be cited in the manuscript
+% ===========================================
+
+@article{anagnostidis-2023-dynamic,
+ abstract = {Autoregressive Transformers adopted in Large Language Models (LLMs) are hard
+to scale to long sequences. Despite several works trying to reduce their
+computational cost, most of LLMs still adopt attention layers between all pairs
+of tokens in the sequence, thus incurring a quadratic cost. In this study, we
+present a novel approach that dynamically prunes contextual information while
+preserving the model's expressiveness, resulting in reduced memory and
+computational requirements during inference. Our method employs a learnable
+mechanism that determines which uninformative tokens can be dropped from the
+context at any point across the generation process. By doing so, our approach
+not only addresses performance concerns but also enhances interpretability,
+providing valuable insight into the model's decision-making process. Our
+technique can be applied to existing pre-trained models through a
+straightforward fine-tuning process, and the pruning strength can be specified
+by a sparsity parameter. Notably, our empirical findings demonstrate that we
+can effectively prune up to 80\% of the context without significant performance
+degradation on downstream tasks, offering a valuable tool for mitigating
+inference costs. Our reference implementation achieves up to $2\times$ increase
+in inference throughput and even greater memory savings.},
+ arxiv_url = {https://arxiv.org/pdf/2305.15805v3.pdf},
+ author = {Sotiris Anagnostidis and Dario Pavllo and Luca Biggio and Lorenzo Noci and Aurelien Lucchi and Thomas Hofmann},
+ title = {Dynamic Context Pruning for Efficient and Interpretable Autoregressive Transformers},
+ year = {2023}
+}
+
+@article{author-year-bie,
+ title = {BiE: Bi-Exponent Block Floating-Point for Large Language Models Quantization}
+}
+
+@article{author-year-llm,
+ title = {D-LLM: A Token Adaptive Computing Resource Allocation Strategy for Large Language Models}
+}
+
+@article{dettmers-2022-bit,
+ abstract = {Large language models have been widely adopted but require significant GPU
+memory for inference. We develop a procedure for Int8 matrix multiplication for
+feed-forward and attention projection layers in transformers, which cut the
+memory needed for inference by half while retaining full precision performance.
+With our method, a 175B parameter 16/32-bit checkpoint can be loaded, converted
+to Int8, and used immediately without performance degradation. This is made
+possible by understanding and working around properties of highly systematic
+emergent features in transformer language models that dominate attention and
+transformer predictive performance. To cope with these features, we develop a
+two-part quantization procedure, LLM.int8(). We first use vector-wise
+quantization with separate normalization constants for each inner product in
+the matrix multiplication, to quantize most of the features. However, for the
+emergent outliers, we also include a new mixed-precision decomposition scheme,
+which isolates the outlier feature dimensions into a 16-bit matrix
+multiplication while still more than 99.9% of values are multiplied in 8-bit.
+Using LLM.int8(), we show empirically it is possible to perform inference in
+LLMs with up to 175B parameters without any performance degradation. This
+result makes such models much more accessible, for example making it possible
+to use OPT-175B/BLOOM on a single server with consumer GPUs. We open-source our
+software.},
+ arxiv_url = {https://arxiv.org/pdf/2208.07339v2.pdf},
+ author = {Tim Dettmers and Mike Lewis and Younes Belkada and Luke Zettlemoyer},
+ github_url = {https://github.com/TimDettmers/bitsandbytes},
+ title = {GPT3.int8(): 8-bit Matrix Multiplication for Transformers at Scale},
+ year = {2022}
+}
+
+@article{ding-2024-memoryformer,
+ abstract = {In order to reduce the computational complexity of large language models,
+great efforts have been made to to improve the efficiency of transformer models
+such as linear attention and flash-attention. However, the model size and
+corresponding computational complexity are constantly scaled up in pursuit of
+higher performance. In this work, we present MemoryFormer, a novel transformer
+architecture which significantly reduces the computational complexity (FLOPs)
+from a new perspective. We eliminate nearly all the computations of the
+transformer model except for the necessary computation required by the
+multi-head attention operation. This is made possible by utilizing an
+alternative method for feature transformation to replace the linear projection
+of fully-connected layers. Specifically, we first construct a group of
+in-memory lookup tables that store a large amount of discrete vectors to
+replace the weight matrix used in linear projection. We then use a hash
+algorithm to retrieve a correlated subset of vectors dynamically based on the
+input embedding. The retrieved vectors combined together will form the output
+embedding, which provides an estimation of the result of matrix multiplication
+operation in a fully-connected layer. Compared to conducting matrix
+multiplication, retrieving data blocks from memory is a much cheaper operation
+which requires little computations. We train MemoryFormer from scratch and
+conduct extensive experiments on various benchmarks to demonstrate the
+effectiveness of the proposed model.},
+ arxiv_url = {https://arxiv.org/pdf/2411.12992v1.pdf},
+ author = {Ning Ding and Yehui Tang and Haochen Qin and Zhenli Zhou and Chao Xu and Lin Li and Kai Han and Heng Liao and Yunhe Wang},
+ title = {MemoryFormer : Minimize Transformer Computation by Removing Fully-Connected Layers},
+ year = {2024}
+}
+
+@article{dutta-2021-redesigning,
+ abstract = {The Transformer and its variants have been proven to be efficient sequence
+learners in many different domains. Despite their staggering success, a
+critical issue has been the enormous number of parameters that must be trained
+(ranging from $10^7$ to $10^{11}$) along with the quadratic complexity of
+dot-product attention. In this work, we investigate the problem of
+approximating the two central components of the Transformer -- multi-head
+self-attention and point-wise feed-forward transformation, with reduced
+parameter space and computational complexity. We build upon recent developments
+in analyzing deep neural networks as numerical solvers of ordinary differential
+equations. Taking advantage of an analogy between Transformer stages and the
+evolution of a dynamical system of multiple interacting particles, we formulate
+a temporal evolution scheme, TransEvolve, to bypass costly dot-product
+attention over multiple stacked layers. We perform exhaustive experiments with
+TransEvolve on well-known encoder-decoder as well as encoder-only tasks. We
+observe that the degree of approximation (or inversely, the degree of parameter
+reduction) has different effects on the performance, depending on the task.
+While in the encoder-decoder regime, TransEvolve delivers performances
+comparable to the original Transformer, in encoder-only tasks it consistently
+outperforms Transformer along with several subsequent variants.},
+ arxiv_url = {https://arxiv.org/pdf/2109.15142v3.pdf},
+ author = {Subhabrata Dutta and Tanya Gautam and Soumen Chakrabarti and Tanmoy Chakraborty},
+ github_url = {https://github.com/LCS2-IIITD/TransEvolve},
+ title = {Redesigning the Transformer Architecture with Insights from Multi-particle Dynamical Systems},
+ year = {2021}
+}
+
+@article{egiazarian-2024-extreme,
+ abstract = {The emergence of accurate open large language models (LLMs) has led to a race
+towards performant quantization techniques which can enable their execution on
+end-user devices. In this paper, we revisit the problem of "extreme" LLM
+compression-defined as targeting extremely low bit counts, such as 2 to 3 bits
+per parameter-from the point of view of classic methods in Multi-Codebook
+Quantization (MCQ). Our algorithm, called AQLM, generalizes the classic
+Additive Quantization (AQ) approach for information retrieval to advance the
+state-of-the-art in LLM compression, via two innovations: 1) learned additive
+quantization of weight matrices in input-adaptive fashion, and 2) joint
+optimization of codebook parameters across each transformer blocks. Broadly,
+AQLM is the first scheme that is Pareto optimal in terms of
+accuracy-vs-model-size when compressing to less than 3 bits per parameter, and
+significantly improves upon all known schemes in the extreme compression (2bit)
+regime. In addition, AQLM is practical: we provide fast GPU and CPU
+implementations of AQLM for token generation, which enable us to match or
+outperform optimized FP16 implementations for speed, while executing in a much
+smaller memory footprint.},
+ arxiv_url = {https://arxiv.org/pdf/2401.06118v4.pdf},
+ author = {Vage Egiazarian and Andrei Panferov and Denis Kuznedelev and Elias Frantar and Artem Babenko and Dan Alistarh},
+ github_url = {https://github.com/Vahe1994/AQLM},
+ title = {Extreme Compression of Large Language Models via Additive Quantization},
+ year = {2024}
+}
+
+@article{guo-2023-pela,
+ abstract = {Applying a pre-trained large model to downstream tasks is prohibitive under
+resource-constrained conditions. Recent dominant approaches for addressing
+efficiency issues involve adding a few learnable parameters to the fixed
+backbone model. This strategy, however, leads to more challenges in loading
+large models for downstream fine-tuning with limited resources. In this paper,
+we propose a novel method for increasing the parameter efficiency of
+pre-trained models by introducing an intermediate pre-training stage. To this
+end, we first employ low-rank approximation to compress the original large
+model and then devise a feature distillation module and a weight perturbation
+regularization module. These modules are specifically designed to enhance the
+low-rank model. In particular, we update only the low-rank model while freezing
+the backbone parameters during pre-training. This allows for direct and
+efficient utilization of the low-rank model for downstream fine-tuning tasks.
+The proposed method achieves both efficiencies in terms of required parameters
+and computation time while maintaining comparable results with minimal
+modifications to the backbone architecture. Specifically, when applied to three
+vision-only and one vision-language Transformer models, our approach often
+demonstrates a merely $\sim$0.6 point decrease in performance while reducing
+the original parameter size by 1/3 to 2/3.},
+ arxiv_url = {https://arxiv.org/pdf/2310.10700v2.pdf},
+ author = {Yangyang Guo and Guangzhi Wang and Mohan Kankanhalli},
+ title = {PELA: Learning Parameter-Efficient Models with Low-Rank Approximation},
+ year = {2023}
+}
+
+@article{jaszczur-2021-sparse,
+ abstract = {Large Transformer models yield impressive results on many tasks, but are
+expensive to train, or even fine-tune, and so slow at decoding that their use
+and study becomes out of reach. We address this problem by leveraging sparsity.
+We study sparse variants for all layers in the Transformer and propose Scaling
+Transformers, a family of next generation Transformer models that use sparse
+layers to scale efficiently and perform unbatched decoding much faster than the
+standard Transformer as we scale up the model size. Surprisingly, the sparse
+layers are enough to obtain the same perplexity as the standard Transformer
+with the same number of parameters. We also integrate with prior sparsity
+approaches to attention and enable fast inference on long sequences even with
+limited memory. This results in performance competitive to the state-of-the-art
+on long text summarization.},
+ arxiv_url = {https://arxiv.org/pdf/2111.12763v1.pdf},
+ author = {Sebastian Jaszczur and Aakanksha Chowdhery and Afroz Mohiuddin and Łukasz Kaiser and Wojciech Gajewski and Henryk Michalewski and Jonni Kanerva},
+ github_url = {https://github.com/google/trax},
+ title = {Sparse is Enough in Scaling Transformers},
+ year = {2021}
+}
+
+@article{kim-2023-squeezellm,
+ abstract = {Generative Large Language Models (LLMs) have demonstrated remarkable results
+for a wide range of tasks. However, deploying these models for inference has
+been a significant challenge due to their unprecedented resource requirements.
+This has forced existing deployment frameworks to use multi-GPU inference
+pipelines, which are often complex and costly, or to use smaller and less
+performant models. In this work, we demonstrate that the main bottleneck for
+generative inference with LLMs is memory bandwidth, rather than compute,
+specifically for single batch inference. While quantization has emerged as a
+promising solution by representing weights with reduced precision, previous
+efforts have often resulted in notable performance degradation. To address
+this, we introduce SqueezeLLM, a post-training quantization framework that not
+only enables lossless compression to ultra-low precisions of up to 3-bit, but
+also achieves higher quantization performance under the same memory constraint.
+Our framework incorporates two novel ideas: (i) sensitivity-based non-uniform
+quantization, which searches for the optimal bit precision assignment based on
+second-order information; and (ii) the Dense-and-Sparse decomposition that
+stores outliers and sensitive weight values in an efficient sparse format. When
+applied to the LLaMA models, our 3-bit quantization significantly reduces the
+perplexity gap from the FP16 baseline by up to 2.1x as compared to the
+state-of-the-art methods with the same memory requirement. Furthermore, when
+deployed on an A6000 GPU, our quantized models achieve up to 2.3x speedup
+compared to the baseline. Our code is available at
+https://github.com/SqueezeAILab/SqueezeLLM.},
+ arxiv_url = {https://arxiv.org/pdf/2306.07629v4.pdf},
+ author = {Sehoon Kim and Coleman Hooper and Amir Gholami and Zhen Dong and Xiuyu Li and Sheng Shen and Michael W. Mahoney and Kurt Keutzer},
+ github_url = {https://github.com/SqueezeAILab/SqueezeLLM},
+ title = {SqueezeLLM: Dense-and-Sparse Quantization},
+ year = {2023}
+}
+
+@article{kitaev-2020-reformer,
+ abstract = {Large Transformer models routinely achieve state-of-the-art results on a
+number of tasks but training these models can be prohibitively costly,
+especially on long sequences. We introduce two techniques to improve the
+efficiency of Transformers. For one, we replace dot-product attention by one
+that uses locality-sensitive hashing, changing its complexity from O($L^2$) to
+O($L\log L$), where $L$ is the length of the sequence. Furthermore, we use
+reversible residual layers instead of the standard residuals, which allows
+storing activations only once in the training process instead of $N$ times,
+where $N$ is the number of layers. The resulting model, the Reformer, performs
+on par with Transformer models while being much more memory-efficient and much
+faster on long sequences.},
+ arxiv_url = {https://arxiv.org/pdf/2001.04451v2.pdf},
+ author = {Nikita Kitaev and Łukasz Kaiser and Anselm Levskaya},
+ github_url = {https://github.com/google/trax},
+ title = {Reformer: The Efficient Transformer},
+ year = {2020}
+}
+
+@article{kwon-2022-fast,
+ abstract = {Pruning is an effective way to reduce the huge inference cost of Transformer
+models. However, prior work on pruning Transformers requires retraining the
+models. This can add high training cost and high complexity to model
+deployment, making it difficult to use in many practical situations. To address
+this, we propose a fast post-training pruning framework for Transformers that
+does not require any retraining. Given a resource constraint and a sample
+dataset, our framework automatically prunes the Transformer model using
+structured sparsity methods. To retain high accuracy without retraining, we
+introduce three novel techniques: (i) a lightweight mask search algorithm that
+finds which heads and filters to prune based on the Fisher information; (ii)
+mask rearrangement that complements the search algorithm; and (iii) mask tuning
+that reconstructs the output activations for each layer. We apply our method to
+BERT-base and DistilBERT, and we evaluate its effectiveness on GLUE and SQuAD
+benchmarks. Our framework achieves up to 2.0x reduction in FLOPs and 1.56x
+speedup in inference latency, while maintaining < 1% loss in accuracy.
+Importantly, our framework prunes Transformers in less than 3 minutes on a
+single GPU, which is over two orders of magnitude faster than existing pruning
+approaches that retrain the models.},
+ arxiv_url = {https://arxiv.org/pdf/2204.09656v2.pdf},
+ author = {Woosuk Kwon and Sehoon Kim and Michael W. Mahoney and Joseph Hassoun and Kurt Keutzer and Amir Gholami},
+ github_url = {https://github.com/WoosukKwon/retraining-free-pruning},
+ title = {A Fast Post-Training Pruning Framework for Transformers},
+ year = {2022}
+}
+
+@article{lialin-2023-relora,
+ abstract = {Despite the dominance and effectiveness of scaling, resulting in large
+networks with hundreds of billions of parameters, the necessity to train
+overparameterized models remains poorly understood, while training costs grow
+exponentially. In this paper, we explore parameter-efficient training
+techniques as an approach to training large neural networks. We introduce a
+novel method called ReLoRA, which utilizes low-rank updates to train high-rank
+networks. We apply ReLoRA to training transformer language models with up to
+1.3B parameters and demonstrate comparable performance to regular neural
+network training. ReLoRA saves up to 5.5Gb of RAM per GPU and improves training
+speed by 9-40% depending on the model size and hardware setup. Our findings
+show the potential of parameter-efficient techniques for large-scale
+pre-training.},
+ arxiv_url = {https://arxiv.org/pdf/2307.05695v4.pdf},
+ author = {Vladislav Lialin and Namrata Shivagunde and Sherin Muckatira and Anna Rumshisky},
+ title = {ReLoRA: High-Rank Training Through Low-Rank Updates},
+ year = {2023}
+}
+
+@article{liao-2023-make,
+ abstract = {Parameter-efficient fine-tuning (PEFT) of pre-trained language models (PLMs)
+has emerged as a highly successful approach, with training only a small number
+of parameters without sacrificing performance and becoming the de-facto
+learning paradigm with the increasing size of PLMs. However, existing PEFT
+methods are not memory-efficient, because they still require caching most of
+the intermediate activations for the gradient calculation, akin to fine-tuning.
+One effective way to reduce the activation memory is to apply a reversible
+model, so the intermediate activations are not necessary to be cached and can
+be recomputed. Nevertheless, modifying a PLM to its reversible variant is not
+straightforward, since the reversible model has a distinct architecture from
+the currently released PLMs. In this paper, we first investigate what is a key
+factor for the success of existing PEFT methods, and realize that it's
+essential to preserve the PLM's starting point when initializing a PEFT method.
+With this finding, we propose memory-efficient fine-tuning (MEFT) that inserts
+adapters into a PLM, preserving the PLM's starting point and making it
+reversible without additional pre-training. We evaluate MEFT on the GLUE
+benchmark and five question-answering tasks with various backbones, BERT,
+RoBERTa, BART and OPT. MEFT significantly reduces the activation memory up to
+84% of full fine-tuning with a negligible amount of trainable parameters.
+Moreover, MEFT achieves the same score on GLUE and a comparable score on the
+question-answering tasks as full fine-tuning. A similar finding is also
+observed for the image classification task.},
+ arxiv_url = {https://arxiv.org/pdf/2306.00477v4.pdf},
+ author = {Baohao Liao and Shaomu Tan and Christof Monz},
+ github_url = {https://github.com/baohaoliao/mefts},
+ title = {Make Pre-trained Model Reversible: From Parameter to Memory Efficient Fine-Tuning},
+ year = {2023}
+}
+
+@article{lin-2024-duquant,
+ abstract = {Quantization of large language models (LLMs) faces significant challenges,
+particularly due to the presence of outlier activations that impede efficient
+low-bit representation. Traditional approaches predominantly address Normal
+Outliers, which are activations across all tokens with relatively large
+magnitudes. However, these methods struggle with smoothing Massive Outliers
+that display significantly larger values, which leads to significant
+performance degradation in low-bit quantization. In this paper, we introduce
+DuQuant, a novel approach that utilizes rotation and permutation
+transformations to more effectively mitigate both massive and normal outliers.
+First, DuQuant starts by constructing the rotation matrix, using specific
+outlier dimensions as prior knowledge, to redistribute outliers to adjacent
+channels by block-wise rotation. Second, We further employ a zigzag permutation
+to balance the distribution of outliers across blocks, thereby reducing
+block-wise variance. A subsequent rotation further smooths the activation
+landscape, enhancing model performance. DuQuant simplifies the quantization
+process and excels in managing outliers, outperforming the state-of-the-art
+baselines across various sizes and types of LLMs on multiple tasks, even with
+4-bit weight-activation quantization. Our code is available at
+https://github.com/Hsu1023/DuQuant.},
+ arxiv_url = {https://arxiv.org/pdf/2406.01721v3.pdf},
+ author = {Haokun Lin and Haobo Xu and Yichen Wu and Jingzhi Cui and Yingtao Zhang and Linzhan Mou and Linqi Song and Zhenan Sun and Ying Wei},
+ github_url = {https://github.com/Hsu1023/DuQuant},
+ title = {DuQuant: Distributing Outliers via Dual Transformation Makes Stronger Quantized LLMs},
+ year = {2024}
+}
+
+@article{liu-2023-blockwise,
+ abstract = {Transformers have emerged as the cornerstone of state-of-the-art natural
+language processing models, showcasing exceptional performance across a wide
+range of AI applications. However, the memory demands posed by the
+self-attention mechanism and the large feedforward network in Transformers
+limit their ability to handle long sequences, thereby creating challenges for
+tasks involving multiple long sequences or long-term dependencies. We present a
+distinct approach, Blockwise Parallel Transformer (BPT), that leverages
+blockwise computation of self-attention and feedforward network fusion to
+minimize memory costs. By processing longer input sequences while maintaining
+memory efficiency, BPT enables training sequences 32 times longer than vanilla
+Transformers and up to 4 times longer than previous memory-efficient methods.
+Extensive experiments on language modeling and reinforcement learning tasks
+demonstrate the effectiveness of BPT in reducing memory requirements and
+improving performance.},
+ arxiv_url = {https://arxiv.org/pdf/2305.19370v3.pdf},
+ author = {Hao Liu and Pieter Abbeel},
+ github_url = {https://github.com/lhao499/llm_large_context},
+ title = {Blockwise Parallel Transformers for Large Context Models},
+ year = {2023}
+}
+
+@article{liu-2023-qllm,
+ abstract = {Large Language Models (LLMs) excel in NLP, but their demands hinder their
+widespread deployment. While Quantization-Aware Training (QAT) offers a
+solution, its extensive training costs make Post-Training Quantization (PTQ) a
+more practical approach for LLMs. In existing studies, activation outliers in
+particular channels are identified as the bottleneck to PTQ accuracy. They
+propose to transform the magnitudes from activations to weights, which however
+offers limited alleviation or suffers from unstable gradients, resulting in a
+severe performance drop at low-bitwidth. In this paper, we propose QLLM, an
+accurate and efficient low-bitwidth PTQ method designed for LLMs. QLLM
+introduces an adaptive channel reassembly technique that reallocates the
+magnitude of outliers to other channels, thereby mitigating their impact on the
+quantization range. This is achieved by channel disassembly and channel
+assembly, which first breaks down the outlier channels into several
+sub-channels to ensure a more balanced distribution of activation magnitudes.
+Then similar channels are merged to maintain the original channel number for
+efficiency. Additionally, an adaptive strategy is designed to autonomously
+determine the optimal number of sub-channels for channel disassembly. To
+further compensate for the performance loss caused by quantization, we propose
+an efficient tuning method that only learns a small number of low-rank weights
+while freezing the pre-trained quantized model. After training, these low-rank
+parameters can be fused into the frozen weights without affecting inference.
+Extensive experiments on LLaMA-1 and LLaMA-2 show that QLLM can obtain accurate
+quantized models efficiently. For example, QLLM quantizes the 4-bit LLaMA-2-70B
+within 10 hours on a single A100-80G GPU, outperforming the previous
+state-of-the-art method by 7.89% on the average accuracy across five zero-shot
+tasks.},
+ arxiv_url = {https://arxiv.org/pdf/2310.08041v3.pdf},
+ author = {Jing Liu and Ruihao Gong and Xiuying Wei and Zhiwei Dong and Jianfei Cai and Bohan Zhuang},
+ github_url = {https://github.com/PanQiWei/AutoGPTQ},
+ title = {QLLM: Accurate and Efficient Low-Bitwidth Quantization for Large Language Models},
+ year = {2023}
+}
+
+@article{nova-2023-gradient,
+ abstract = {Large Language Models (LLMs) have achieved great success in solving difficult
+tasks across many domains, but such success comes with a high computation cost,
+and inference latency. As developers and third parties customize these models,
+the need to provide efficient inference has increased. Many efforts have
+attempted to reduce inference cost through model compression techniques such as
+pruning and distillation. However, these techniques either require labeled
+data, or are time-consuming as they require the compressed model to be
+retrained to regain accuracy. In this paper, we propose a gradient-free
+structured pruning framework that uses only unlabeled data. An evaluation on
+the GLUE and SQuAD benchmarks using BERT$_{BASE}$ and DistilBERT illustrates
+the effectiveness of the proposed approach. By only using the weights of the
+pre-trained model and unlabeled data, in a matter of a few minutes on a single
+GPU, up to 40% of the original FLOP count can be reduced with less than a 4%
+accuracy loss across all tasks considered.},
+ arxiv_url = {https://arxiv.org/pdf/2303.04185v2.pdf},
+ author = {Azade Nova and Hanjun Dai and Dale Schuurmans},
+ title = {Gradient-Free Structured Pruning with Unlabeled Data},
+ year = {2023}
+}
+
+@article{sehanobish-2024-structured,
+ abstract = {Recent efforts to scale Transformer models have demonstrated rapid progress
+across a wide range of tasks (Wei et al., 2022). However, fine-tuning these
+models for downstream tasks is expensive due to their large parameter counts.
+Parameter-efficient fine-tuning (PEFT) approaches have emerged as a viable
+alternative by allowing us to fine-tune models by updating only a small number
+of parameters. In this work, we propose a general framework for parameter
+efficient fine-tuning (PEFT), based on structured unrestricted-rank matrices
+(SURM) which can serve as a drop-in replacement for popular approaches such as
+Adapters and LoRA. Unlike other methods like LoRA, SURMs provides more
+flexibility in finding the right balance between compactness and
+expressiveness. This is achieved by using low displacement rank matrices
+(LDRMs), which hasn't been used in this context before. SURMs remain
+competitive with baselines, often providing significant quality improvements
+while using a smaller parameter budget. SURMs achieve 5-7% accuracy gains on
+various image classification tasks while replacing low-rank matrices in LoRA.
+It also results in up to 12x reduction of the number of parameters in adapters
+(with virtually no loss in quality) on the GLUE benchmark.},
+ arxiv_url = {https://arxiv.org/pdf/2406.17740v3.pdf},
+ author = {Arijit Sehanobish and Avinava Dubey and Krzysztof Choromanski and Somnath Basu Roy Chowdhury and Deepali Jain and Vikas Sindhwani and Snigdha Chaturvedi},
+ title = {Structured Unrestricted-Rank Matrices for Parameter Efficient Finetuning},
+ year = {2024}
+}
+
+@article{sheng-2023-flexgen,
+ abstract = {The high computational and memory requirements of large language model (LLM)
+inference make it feasible only with multiple high-end accelerators. Motivated
+by the emerging demand for latency-insensitive tasks with batched processing,
+this paper initiates the study of high-throughput LLM inference using limited
+resources, such as a single commodity GPU. We present FlexGen, a
+high-throughput generation engine for running LLMs with limited GPU memory.
+FlexGen can be flexibly configured under various hardware resource constraints
+by aggregating memory and computation from the GPU, CPU, and disk. By solving a
+linear programming problem, it searches for efficient patterns to store and
+access tensors. FlexGen further compresses the weights and the attention cache
+to 4 bits with negligible accuracy loss. These techniques enable FlexGen to
+have a larger space of batch size choices and thus significantly increase
+maximum throughput. As a result, when running OPT-175B on a single 16GB GPU,
+FlexGen achieves significantly higher throughput compared to state-of-the-art
+offloading systems, reaching a generation throughput of 1 token/s for the first
+time with an effective batch size of 144. On the HELM benchmark, FlexGen can
+benchmark a 30B model with a 16GB GPU on 7 representative sub-scenarios in 21
+hours. The code is available at https://github.com/FMInference/FlexGen},
+ arxiv_url = {https://arxiv.org/pdf/2303.06865v2.pdf},
+ author = {Ying Sheng and Lianmin Zheng and Binhang Yuan and Zhuohan Li and Max Ryabinin and Daniel Y. Fu and Zhiqiang Xie and Beidi Chen and Clark Barrett and Joseph E. Gonzalez and Percy Liang and Christopher Ré and Ion Stoica and Ce Zhang},
+ title = {FlexGen: High-Throughput Generative Inference of Large Language Models with a Single GPU},
+ year = {2023}
+}
+
+@article{wang-2023-zero,
+ abstract = {Deployment of Transformer models on edge devices is becoming increasingly
+challenging due to the exponentially growing inference cost that scales
+quadratically with the number of tokens in the input sequence. Token pruning is
+an emerging solution to address this challenge due to its ease of deployment on
+various Transformer backbones. However, most token pruning methods require
+computationally expensive fine-tuning, which is undesirable in many edge
+deployment cases. In this work, we propose Zero-TPrune, the first zero-shot
+method that considers both the importance and similarity of tokens in
+performing token pruning. It leverages the attention graph of pre-trained
+Transformer models to produce an importance distribution for tokens via our
+proposed Weighted Page Rank (WPR) algorithm. This distribution further guides
+token partitioning for efficient similarity-based pruning. Due to the
+elimination of the fine-tuning overhead, Zero-TPrune can prune large models at
+negligible computational cost, switch between different pruning configurations
+at no computational cost, and perform hyperparameter tuning efficiently. We
+evaluate the performance of Zero-TPrune on vision tasks by applying it to
+various vision Transformer backbones and testing them on ImageNet. Without any
+fine-tuning, Zero-TPrune reduces the FLOPs cost of DeiT-S by 34.7% and improves
+its throughput by 45.3% with only 0.4% accuracy loss. Compared with
+state-of-the-art pruning methods that require fine-tuning, Zero-TPrune not only
+eliminates the need for fine-tuning after pruning but also does so with only
+0.1% accuracy loss. Compared with state-of-the-art fine-tuning-free pruning
+methods, Zero-TPrune reduces accuracy loss by up to 49% with similar FLOPs
+budgets. Project webpage: https://jha-lab.github.io/zerotprune.},
+ arxiv_url = {https://arxiv.org/pdf/2305.17328v3.pdf},
+ author = {Hongjie Wang and Bhishma Dedhia and Niraj K. Jha},
+ title = {Zero-TPrune: Zero-Shot Token Pruning through Leveraging of the Attention Graph in Pre-Trained Transformers},
+ year = {2023}
+}
+
+@article{yan-2021-attention,
+ abstract = {Transformer model with multi-head attention requires caching intermediate
+results for efficient inference in generation tasks. However, cache brings new
+memory-related costs and prevents leveraging larger batch size for faster
+speed. We propose memory-efficient lossless attention (called EL-attention) to
+address this issue. It avoids heavy operations for building multi-head keys and
+values, cache for them is not needed. EL-attention constructs an ensemble of
+attention results by expanding query while keeping key and value shared. It
+produces the same result as multi-head attention with less GPU memory and
+faster inference speed. We conduct extensive experiments on Transformer, BART,
+and GPT-2 for summarization and question generation tasks. The results show
+EL-attention speeds up existing models by 1.6x to 5.3x without accuracy loss.},
+ arxiv_url = {https://arxiv.org/pdf/2105.04779v2.pdf},
+ author = {Yu Yan and Jiusheng Chen and Weizhen Qi and Nikhil Bhendawade and Yeyun Gong and Nan Duan and Ruofei Zhang},
+ github_url = {https://github.com/pytorch/fairseq},
+ title = {EL-Attention: Memory Efficient Lossless Attention for Generation},
+ year = {2021}
+}
+
+@article{zheng-2023-response,
+ abstract = {Large language models (LLMs) have revolutionized the field of AI,
+demonstrating unprecedented capacity across various tasks. However, the
+inference process for LLMs comes with significant computational costs. In this
+paper, we propose an efficient LLM inference pipeline that harnesses the power
+of LLMs. Our approach begins by tapping into the potential of LLMs to
+accurately perceive and predict the response length with minimal overhead. By
+leveraging this information, we introduce an efficient sequence scheduling
+technique that groups queries with similar response lengths into micro-batches.
+We evaluate our approach on real-world instruction datasets using the
+LLaMA-based model, and our results demonstrate an impressive 86% improvement in
+inference throughput without compromising effectiveness. Notably, our method is
+orthogonal to other inference acceleration techniques, making it a valuable
+addition to many existing toolkits (e.g., FlashAttention, Quantization) for LLM
+inference.},
+ arxiv_url = {https://arxiv.org/pdf/2305.13144v2.pdf},
+ author = {Zangwei Zheng and Xiaozhe Ren and Fuzhao Xue and Yang Luo and Xin Jiang and Yang You},
+ github_url = {https://github.com/zhengzangw/Sequence-Scheduling},
+ title = {Response Length Perception and  Sequence Scheduling: An LLM-Empowered LLM Inference Pipeline},
+ year = {2023}
+}
+
+% ===========================================
+% REFERENCE CANDIDATES
+% Additional reference papers for context
+% ===========================================
+
+@article{houlsby-2019-parameter,
+ abstract = {Fine-tuning large pre-trained models is an effective transfer mechanism in
+NLP. However, in the presence of many downstream tasks, fine-tuning is
+parameter inefficient: an entire new model is required for every task. As an
+alternative, we propose transfer with adapter modules. Adapter modules yield a
+compact and extensible model; they add only a few trainable parameters per
+task, and new tasks can be added without revisiting previous ones. The
+parameters of the original network remain fixed, yielding a high degree of
+parameter sharing. To demonstrate adapter's effectiveness, we transfer the
+recently proposed BERT Transformer model to 26 diverse text classification
+tasks, including the GLUE benchmark. Adapters attain near state-of-the-art
+performance, whilst adding only a few parameters per task. On GLUE, we attain
+within 0.4% of the performance of full fine-tuning, adding only 3.6% parameters
+per task. By contrast, fine-tuning trains 100% of the parameters per task.},
+ arxiv_url = {https://arxiv.org/pdf/1902.00751v2.pdf},
+ author = {Neil Houlsby and Andrei Giurgiu and Stanislaw Jastrzebski and Bruna Morrone and Quentin de Laroussilhe and Andrea Gesmundo and Mona Attariyan and Sylvain Gelly},
+ title = {Parameter-efficient transfer learning for NLP},
+ year = {2019}
+}
+
+@article{li-2021-prefix,
+ abstract = {Fine-tuning is the de facto way to leverage large pretrained language models
+to perform downstream tasks. However, it modifies all the language model
+parameters and therefore necessitates storing a full copy for each task. In
+this paper, we propose prefix-tuning, a lightweight alternative to fine-tuning
+for natural language generation tasks, which keeps language model parameters
+frozen, but optimizes a small continuous task-specific vector (called the
+prefix). Prefix-tuning draws inspiration from prompting, allowing subsequent
+tokens to attend to this prefix as if it were "virtual tokens". We apply
+prefix-tuning to GPT-2 for table-to-text generation and to BART for
+summarization. We find that by learning only 0.1\% of the parameters,
+prefix-tuning obtains comparable performance in the full data setting,
+outperforms fine-tuning in low-data settings, and extrapolates better to
+examples with topics unseen during training.},
+ arxiv_url = {https://arxiv.org/pdf/2101.00190v1.pdf},
+ author = {Xiang Lisa Li and Percy Liang},
+ title = {Prefix-tuning: Optimizing continuous prompts for generation},
+ year = {2021}
+}
+
+@article{liao-2023-parameter,
+ abstract = {Parameter-efficient fine-tuning (PEFT) of pre-trained language models has
+recently demonstrated remarkable achievements, effectively matching the
+performance of full fine-tuning while utilizing significantly fewer trainable
+parameters, and consequently addressing the storage and communication
+constraints. Nonetheless, various PEFT methods are limited by their inherent
+characteristics. In the case of sparse fine-tuning, which involves modifying
+only a small subset of the existing parameters, the selection of fine-tuned
+parameters is task- and domain-specific, making it unsuitable for federated
+learning. On the other hand, PEFT methods with adding new parameters typically
+introduce additional inference latency. In this paper, we demonstrate the
+feasibility of generating a sparse mask in a task-agnostic manner, wherein all
+downstream tasks share a common mask. Our approach, which relies solely on the
+magnitude information of pre-trained parameters, surpasses existing
+methodologies by a significant margin when evaluated on the GLUE benchmark.
+Additionally, we introduce a novel adapter technique that directly applies the
+adapter to pre-trained parameters instead of the hidden representation, thereby
+achieving identical inference speed to that of full fine-tuning. Through
+extensive experiments, our proposed method attains a new state-of-the-art
+outcome in terms of both performance and storage efficiency, storing only 0.03%
+parameters of full fine-tuning.},
+ arxiv_url = {https://arxiv.org/pdf/2305.16742v1.pdf},
+ author = {Baohao Liao and Yan Meng and Christof Monz},
+ title = {Parameter-efficient fine-tuning without introducing new latency},
+ year = {2023}
+}
+
+@article{liu-2019-roberta,
+ abstract = {Language model pretraining has led to significant performance gains but
+careful comparison between different approaches is challenging. Training is
+computationally expensive, often done on private datasets of different sizes,
+and, as we will show, hyperparameter choices have significant impact on the
+final results. We present a replication study of BERT pretraining (Devlin et
+al., 2019) that carefully measures the impact of many key hyperparameters and
+training data size. We find that BERT was significantly undertrained, and can
+match or exceed the performance of every model published after it. Our best
+model achieves state-of-the-art results on GLUE, RACE and SQuAD. These results
+highlight the importance of previously overlooked design choices, and raise
+questions about the source of recently reported improvements. We release our
+models and code.},
+ arxiv_url = {https://arxiv.org/pdf/1907.11692v1.pdf},
+ author = {Yinhan Liu and Myle Ott and Naman Goyal and Jingfei Du and Mandar Joshi and Danqi Chen and Omer Levy and Mike Lewis and Luke Zettlemoyer and Veselin Stoyanov},
+ title = {Roberta: A robustly optimized BERT pretraining approach},
+ year = {2019}
+}
+
+@article{lu-2019-vilbert,
+ abstract = {We present ViLBERT (short for Vision-and-Language BERT), a model for learning
+task-agnostic joint representations of image content and natural language. We
+extend the popular BERT architecture to a multi-modal two-stream model,
+pro-cessing both visual and textual inputs in separate streams that interact
+through co-attentional transformer layers. We pretrain our model through two
+proxy tasks on the large, automatically collected Conceptual Captions dataset
+and then transfer it to multiple established vision-and-language tasks --
+visual question answering, visual commonsense reasoning, referring expressions,
+and caption-based image retrieval -- by making only minor additions to the base
+architecture. We observe significant improvements across tasks compared to
+existing task-specific models -- achieving state-of-the-art on all four tasks.
+Our work represents a shift away from learning groundings between vision and
+language only as part of task training and towards treating visual grounding as
+a pretrainable and transferable capability.},
+ arxiv_url = {https://arxiv.org/pdf/1908.02265v1.pdf},
+ author = {Jiasen Lu and Dhruv Batra and Devi Parikh and Stefan Lee},
+ title = {Vilbert: Pretraining task-agnostic visiolinguistic representations for vision-and-language tasks},
+ year = {2019}
+}
+
+@article{raffel-2019-exploring,
+ abstract = {Transfer learning, where a model is first pre-trained on a data-rich task
+before being fine-tuned on a downstream task, has emerged as a powerful
+technique in natural language processing (NLP). The effectiveness of transfer
+learning has given rise to a diversity of approaches, methodology, and
+practice. In this paper, we explore the landscape of transfer learning
+techniques for NLP by introducing a unified framework that converts all
+text-based language problems into a text-to-text format. Our systematic study
+compares pre-training objectives, architectures, unlabeled data sets, transfer
+approaches, and other factors on dozens of language understanding tasks. By
+combining the insights from our exploration with scale and our new ``Colossal
+Clean Crawled Corpus'', we achieve state-of-the-art results on many benchmarks
+covering summarization, question answering, text classification, and more. To
+facilitate future work on transfer learning for NLP, we release our data set,
+pre-trained models, and code.},
+ arxiv_url = {https://arxiv.org/pdf/1910.10683v4.pdf},
+ author = {Colin Raffel and Noam Shazeer and Adam Roberts and Katherine Lee and Sharan Narang and Michael Matena and Yanqi Zhou and Wei Li and Peter J. Liu},
+ title = {Exploring the limits of transfer learning with a unified text-to-text transformer},
+ year = {2019}
+}
+
+@article{tan-2019-lxmert,
+ abstract = {Vision-and-language reasoning requires an understanding of visual concepts,
+language semantics, and, most importantly, the alignment and relationships
+between these two modalities. We thus propose the LXMERT (Learning
+Cross-Modality Encoder Representations from Transformers) framework to learn
+these vision-and-language connections. In LXMERT, we build a large-scale
+Transformer model that consists of three encoders: an object relationship
+encoder, a language encoder, and a cross-modality encoder. Next, to endow our
+model with the capability of connecting vision and language semantics, we
+pre-train the model with large amounts of image-and-sentence pairs, via five
+diverse representative pre-training tasks: masked language modeling, masked
+object prediction (feature regression and label classification), cross-modality
+matching, and image question answering. These tasks help in learning both
+intra-modality and cross-modality relationships. After fine-tuning from our
+pre-trained parameters, our model achieves the state-of-the-art results on two
+visual question answering datasets (i.e., VQA and GQA). We also show the
+generalizability of our pre-trained cross-modality model by adapting it to a
+challenging visual-reasoning task, NLVR2, and improve the previous best result
+by 22% absolute (54% to 76%). Lastly, we demonstrate detailed ablation studies
+to prove that both our novel model components and pre-training strategies
+significantly contribute to our strong results; and also present several
+attention visualizations for the different encoders. Code and pre-trained
+models publicly available at: https://github.com/airsplay/lxmert},
+ arxiv_url = {https://arxiv.org/pdf/1908.07490v3.pdf},
+ author = {Hao Tan and Mohit Bansal},
+ title = {LXMERT: learning cross-modality encoder representations from transformers},
+ year = {2019}
+}
+
+@article{tay-2022-unifying,
+ abstract = {Existing pre-trained models are generally geared towards a particular class
+of problems. To date, there seems to be still no consensus on what the right
+architecture and pre-training setup should be. This paper presents a unified
+framework for pre-training models that are universally effective across
+datasets and setups. We begin by disentangling architectural archetypes with
+pre-training objectives -- two concepts that are commonly conflated. Next, we
+present a generalized & unified perspective for self-supervision in NLP and
+show how different pre-training objectives can be cast as one another and how
+interpolating between different objectives can be effective. We then propose
+Mixture-of-Denoisers (MoD), a pre-training objective that combines diverse
+pre-training paradigms together. We furthermore introduce a notion of mode
+switching, wherein downstream fine-tuning is associated with specific
+pre-training schemes. We conduct extensive ablative experiments to compare
+multiple pre-training objectives and find that our method pushes the
+Pareto-frontier by outperforming T5 & GPT-like models across multiple diverse
+setups. By scaling our model up to 20B parameters, we achieve SOTA performance
+on 50 well-established supervised finetuning based NLP tasks. Our model also
+achieve strong results at in-context learning, outperforming 175B GPT-3 on
+zero-shot SuperGLUE and tripling the performance of T5-XXL on one-shot
+summarization. On 0-shot MMLU, UL2 20B outperforms T0 and T5 models. UL2 20B
+also works well with chain-of-thought prompting and reasoning, making it an
+appealing choice for research into reasoning at a small to medium scale of 20B
+parameters. Finally, we apply FLAN instruction tuning to the UL2 20B model,
+achieving MMLU and Big-Bench scores competitive to FLAN-PaLM 62B. We release
+Flax-based T5X checkpoints for the UL2 20B & Flan-UL2 20B.},
+ arxiv_url = {https://arxiv.org/pdf/2205.05131v3.pdf},
+ author = {Yi Tay and Mostafa Dehghani and Vinh Q. Tran and Xavier Garcia and Jason Wei and Xuezhi Wang and Hyung Won Chung and Siamak Shakeri and Dara Bahri and Tal Schuster and Huaixiu Steven Zheng and Denny Zhou and Neil Houlsby and Donald Metzler},
+ title = {Unifying language learning paradigms},
+ year = {2022}
+}
+
+@article{touvron-2023-llama,
+ abstract = {We introduce LLaMA, a collection of foundation language models ranging from
+7B to 65B parameters. We train our models on trillions of tokens, and show that
+it is possible to train state-of-the-art models using publicly available
+datasets exclusively, without resorting to proprietary and inaccessible
+datasets. In particular, LLaMA-13B outperforms GPT-3 (175B) on most benchmarks,
+and LLaMA-65B is competitive with the best models, Chinchilla-70B and
+PaLM-540B. We release all our models to the research community.},
+ arxiv_url = {https://arxiv.org/pdf/2302.13971v1.pdf},
+ author = {Hugo Touvron and Thibaut Lavril and Gautier Izacard and Xavier Martinet and Marie-Anne Lachaux and Timothée Lacroix and Baptiste Rozière and Naman Goyal and Eric Hambro and Faisal Azhar and Aurelien Rodriguez and Armand Joulin and Edouard Grave and Guillaume Lample},
+ title = {Llama: Open and efficient foundation language models},
+ year = {2023}
+}
+
+@article{workshop-2022-bloom,
+ abstract = {Large language models (LLMs) have been shown to be able to perform new tasks
+based on a few demonstrations or natural language instructions. While these
+capabilities have led to widespread adoption, most LLMs are developed by
+resource-rich organizations and are frequently kept from the public. As a step
+towards democratizing this powerful technology, we present BLOOM, a
+176B-parameter open-access language model designed and built thanks to a
+collaboration of hundreds of researchers. BLOOM is a decoder-only Transformer
+language model that was trained on the ROOTS corpus, a dataset comprising
+hundreds of sources in 46 natural and 13 programming languages (59 in total).
+We find that BLOOM achieves competitive performance on a wide variety of
+benchmarks, with stronger results after undergoing multitask prompted
+finetuning. To facilitate future research and applications using LLMs, we
+publicly release our models and code under the Responsible AI License.},
+ arxiv_url = {https://arxiv.org/pdf/2211.05100v4.pdf},
+ author = {BigScience Workshop and : and Teven Le Scao and Angela Fan and Christopher Akiki and Ellie Pavlick and Suzana Ilić and Daniel Hesslow and Roman Castagné and Alexandra Sasha Luccioni and François Yvon and Matthias Gallé and Jonathan Tow and Alexander M. Rush and Stella Biderman and Albert Webson and Pawan Sasanka Ammanamanchi and Thomas Wang and Benoît Sagot and Niklas Muennighoff and Albert Villanova del Moral and Olatunji Ruwase and Rachel Bawden and Stas Bekman and Angelina McMillan-Major and Iz Beltagy and Huu Nguyen and Lucile Saulnier and Samson Tan and Pedro Ortiz Suarez and Victor Sanh and Hugo Laurençon and Yacine Jernite and Julien Launay and Margaret Mitchell and Colin Raffel and Aaron Gokaslan and Adi Simhi and Aitor Soroa and Alham Fikri Aji and Amit Alfassy and Anna Rogers and Ariel Kreisberg Nitzav and Canwen Xu and Chenghao Mou and Chris Emezue and Christopher Klamm and Colin Leong and Daniel van Strien and David Ifeoluwa Adelani and Dragomir Radev and Eduardo González Ponferrada and Efrat Levkovizh and Ethan Kim and Eyal Bar Natan and Francesco De Toni and Gérard Dupont and Germán Kruszewski and Giada Pistilli and Hady Elsahar and Hamza Benyamina and Hieu Tran and Ian Yu and Idris Abdulmumin and Isaac Johnson and Itziar Gonzalez-Dios and Javier de la Rosa and Jenny Chim and Jesse Dodge and Jian Zhu and Jonathan Chang and Jörg Frohberg and Joseph Tobing and Joydeep Bhattacharjee and Khalid Almubarak and Kimbo Chen and Kyle Lo and Leandro Von Werra and Leon Weber and Long Phan and Loubna Ben allal and Ludovic Tanguy and Manan Dey and Manuel Romero Muñoz and Maraim Masoud and María Grandury and Mario Šaško and Max Huang and Maximin Coavoux and Mayank Singh and Mike Tian-Jian Jiang and Minh Chien Vu and Mohammad A. Jauhar and Mustafa Ghaleb and Nishant Subramani and Nora Kassner and Nurulaqilla Khamis and Olivier Nguyen and Omar Espejel and Ona de Gibert and Paulo Villegas and Peter Henderson and Pierre Colombo and Priscilla Amuok and Quentin Lhoest and Rheza Harliman and Rishi Bommasani and Roberto Luis López and Rui Ribeiro and Salomey Osei and Sampo Pyysalo and Sebastian Nagel and Shamik Bose and Shamsuddeen Hassan Muhammad and Shanya Sharma and Shayne Longpre and Somaieh Nikpoor and Stanislav Silberberg and Suhas Pai and Sydney Zink and Tiago Timponi Torrent and Timo Schick and Tristan Thrush and Valentin Danchev and Vassilina Nikoulina and Veronika Laippala and Violette Lepercq and Vrinda Prabhu and Zaid Alyafeai and Zeerak Talat and Arun Raja and Benjamin Heinzerling and Chenglei Si and Davut Emre Taşar and Elizabeth Salesky and Sabrina J. Mielke and Wilson Y. Lee and Abheesht Sharma and Andrea Santilli and Antoine Chaffin and Arnaud Stiegler and Debajyoti Datta and Eliza Szczechla and Gunjan Chhablani and Han Wang and Harshit Pandey and Hendrik Strobelt and Jason Alan Fries and Jos Rozen and Leo Gao and Lintang Sutawika and M Saiful Bari and Maged S. Al-shaibani and Matteo Manica and Nihal Nayak and Ryan Teehan and Samuel Albanie and Sheng Shen and Srulik Ben-David and Stephen H. Bach and Taewoon Kim and Tali Bers and Thibault Fevry and Trishala Neeraj and Urmish Thakker and Vikas Raunak and Xiangru Tang and Zheng-Xin Yong and Zhiqing Sun and Shaked Brody and Yallow Uri and Hadar Tojarieh and Adam Roberts and Hyung Won Chung and Jaesung Tae and Jason Phang and Ofir Press and Conglong Li and Deepak Narayanan and Hatim Bourfoune and Jared Casper and Jeff Rasley and Max Ryabinin and Mayank Mishra and Minjia Zhang and Mohammad Shoeybi and Myriam Peyrounette and Nicolas Patry and Nouamane Tazi and Omar Sanseviero and Patrick von Platen and Pierre Cornette and Pierre François Lavallée and Rémi Lacroix and Samyam Rajbhandari and Sanchit Gandhi and Shaden Smith and Stéphane Requena and Suraj Patil and Tim Dettmers and Ahmed Baruwa and Amanpreet Singh and Anastasia Cheveleva and Anne-Laure Ligozat and Arjun Subramonian and Aurélie Névéol and Charles Lovering and Dan Garrette and Deepak Tunuguntla and Ehud Reiter and Ekaterina Taktasheva and Ekaterina Voloshina and Eli Bogdanov and Genta Indra Winata and Hailey Schoelkopf and Jan-Christoph Kalo and Jekaterina Novikova and Jessica Zosa Forde and Jordan Clive and Jungo Kasai and Ken Kawamura and Liam Hazan and Marine Carpuat and Miruna Clinciu and Najoung Kim and Newton Cheng and Oleg Serikov and Omer Antverg and Oskar van der Wal and Rui Zhang and Ruochen Zhang and Sebastian Gehrmann and Shachar Mirkin and Shani Pais and Tatiana Shavrina and Thomas Scialom and Tian Yun and Tomasz Limisiewicz and Verena Rieser and Vitaly Protasov and Vladislav Mikhailov and Yada Pruksachatkun and Yonatan Belinkov and Zachary Bamberger and Zdeněk Kasner and Alice Rueda and Amanda Pestana and Amir Feizpour and Ammar Khan and Amy Faranak and Ana Santos and Anthony Hevia and Antigona Unldreaj and Arash Aghagol and Arezoo Abdollahi and Aycha Tammour and Azadeh HajiHosseini and Bahareh Behroozi and Benjamin Ajibade and Bharat Saxena and Carlos Muñoz Ferrandis and Daniel McDuff and Danish Contractor and David Lansky and Davis David and Douwe Kiela and Duong A. Nguyen and Edward Tan and Emi Baylor and Ezinwanne Ozoani and Fatima Mirza and Frankline Ononiwu and Habib Rezanejad and Hessie Jones and Indrani Bhattacharya and Irene Solaiman and Irina Sedenko and Isar Nejadgholi and Jesse Passmore and Josh Seltzer and Julio Bonis Sanz and Livia Dutra and Mairon Samagaio and Maraim Elbadri and Margot Mieskes and Marissa Gerchick and Martha Akinlolu and Michael McKenna and Mike Qiu and Muhammed Ghauri and Mykola Burynok and Nafis Abrar and Nazneen Rajani and Nour Elkott and Nour Fahmy and Olanrewaju Samuel and Ran An and Rasmus Kromann and Ryan Hao and Samira Alizadeh and Sarmad Shubber and Silas Wang and Sourav Roy and Sylvain Viguier and Thanh Le and Tobi Oyebade and Trieu Le and Yoyo Yang and Zach Nguyen and Abhinav Ramesh Kashyap and Alfredo Palasciano and Alison Callahan and Anima Shukla and Antonio Miranda-Escalada and Ayush Singh and Benjamin Beilharz and Bo Wang and Caio Brito and Chenxi Zhou and Chirag Jain and Chuxin Xu and Clémentine Fourrier and Daniel León Periñán and Daniel Molano and Dian Yu and Enrique Manjavacas and Fabio Barth and Florian Fuhrimann and Gabriel Altay and Giyaseddin Bayrak and Gully Burns and Helena U. Vrabec and Imane Bello and Ishani Dash and Jihyun Kang and John Giorgi and Jonas Golde and Jose David Posada and Karthik Rangasai Sivaraman and Lokesh Bulchandani and Lu Liu and Luisa Shinzato and Madeleine Hahn de Bykhovetz and Maiko Takeuchi and Marc Pàmies and Maria A Castillo and Marianna Nezhurina and Mario Sänger and Matthias Samwald and Michael Cullan and Michael Weinberg and Michiel De Wolf and Mina Mihaljcic and Minna Liu and Moritz Freidank and Myungsun Kang and Natasha Seelam and Nathan Dahlberg and Nicholas Michio Broad and Nikolaus Muellner and Pascale Fung and Patrick Haller and Ramya Chandrasekhar and Renata Eisenberg and Robert Martin and Rodrigo Canalli and Rosaline Su and Ruisi Su and Samuel Cahyawijaya and Samuele Garda and Shlok S Deshmukh and Shubhanshu Mishra and Sid Kiblawi and Simon Ott and Sinee Sang-aroonsiri and Srishti Kumar and Stefan Schweter and Sushil Bharati and Tanmay Laud and Théo Gigant and Tomoya Kainuma and Wojciech Kusa and Yanis Labrak and Yash Shailesh Bajaj and Yash Venkatraman and Yifan Xu and Yingxin Xu and Yu Xu and Zhe Tan and Zhongli Xie and Zifan Ye and Mathilde Bras and Younes Belkada and Thomas Wolf},
+ title = {BLOOM: A 176b-parameter open-access multilingual language model},
+ year = {2022}
+}
