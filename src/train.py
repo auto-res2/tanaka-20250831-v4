@@ -1,4 +1,3 @@
-```python
 """src/train.py
 Training script for a tiny causal-language-model fine-tuning run.
 The goal is NOT to obtain a state-of-the-art model but to demonstrate a
@@ -33,8 +32,12 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 from tqdm.auto import tqdm
-from transformers import (AutoConfig, AutoModelForCausalLM,
-                          AutoTokenizer, get_linear_schedule_with_warmup)
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    get_linear_schedule_with_warmup,
+)
 
 from .preprocess import run as preprocess_run, MemMapDataset
 
@@ -67,7 +70,7 @@ def train(config: Dict[str, Any] | None = None):
     default_cfg = {
         "model_name": "gpt2",  # 124 M parameters
         "seq_len": 128,
-        "batch_size": 8,       # total tokens / step = 1 k
+        "batch_size": 8,  # total tokens / step = 1 k
         "epochs": 1,
         "lr": 5e-5,
         "warmup_steps": 100,
@@ -90,9 +93,11 @@ def train(config: Dict[str, Any] | None = None):
     # ---------------------------------------------------------------------
     # 1) Ensure dataset exists (might trigger download/build on first run)
     # ---------------------------------------------------------------------
-    preprocess_run(seq_len=config["seq_len"],
-                   max_train_tokens=config["max_train_tokens"],
-                   max_val_tokens=0)  # we only need train here
+    preprocess_run(
+        seq_len=config["seq_len"],
+        max_train_tokens=config["max_train_tokens"],
+        max_val_tokens=0,  # we only need train here
+    )
 
     tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
 
@@ -109,8 +114,9 @@ def train(config: Dict[str, Any] | None = None):
     # ---------------------------------------------------------------------
     # 2) Model, optimiser, LR-schedule
     # ---------------------------------------------------------------------
-    model = AutoModelForCausalLM.from_pretrained(config["model_name"],
-                                                torch_dtype=torch.float16)
+    model = AutoModelForCausalLM.from_pretrained(
+        config["model_name"], torch_dtype=torch.float16
+    )
     model.resize_token_embeddings(len(tokenizer))
     model.to(device)
 
@@ -140,7 +146,9 @@ def train(config: Dict[str, Any] | None = None):
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optim.step(); sched.step(); optim.zero_grad(set_to_none=True)
+            optim.step()
+            sched.step()
+            optim.zero_grad(set_to_none=True)
 
             running_loss += loss.item()
             if step % 100 == 0:
@@ -172,10 +180,13 @@ if __name__ == "__main__":
     import argparse, ast
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="{}",
-                        help="Override training JSON-dict, e.g. '{\"epochs\":2}'")
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="{}",
+        help="Override training JSON-dict, e.g. '{\"epochs\":2}'",
+    )
     args = parser.parse_args()
 
     cfg_override = ast.literal_eval(args.config)
     train(cfg_override)
-``

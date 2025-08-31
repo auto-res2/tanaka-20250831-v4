@@ -1,4 +1,3 @@
-```python
 """src/preprocess.py
 Tokenises a small slice of WikiText-2 and stores it as two uint16
 mem-mapped binary files under `data/`:
@@ -23,6 +22,7 @@ from transformers import AutoTokenizer
 # ---------------------------------------------------------------------------
 # Low-level dataset class – reused by train/evaluate
 # ---------------------------------------------------------------------------
+
 
 class MemMapDataset:
     """Memory-mapped token sequence split into *fixed-length* blocks."""
@@ -63,9 +63,11 @@ def _save_memmap(arr: List[int], path: Path):
     mm.flush()
 
 
-def run(seq_len: int = 128,
-        max_train_tokens: int = 50_000,
-        max_val_tokens: int = 10_000):
+def run(
+    seq_len: int = 128,
+    max_train_tokens: int = 50_000,
+    max_val_tokens: int = 10_000,
+):
     """Create *tiny* WikiText-2 mem-mapped dataset for demo purposes."""
     data_dir = Path("data")
     data_dir.mkdir(exist_ok=True)
@@ -101,4 +103,3 @@ def run(seq_len: int = 128,
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     run()
-``
