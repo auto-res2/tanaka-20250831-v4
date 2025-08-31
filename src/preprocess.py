@@ -1,12 +1,3 @@
-"""src/preprocess.py
-----------------------------------
-Very light-weight data preprocessing that downloads the required HuggingFace
-`datasets` and stores a tokenised version to disk so that subsequent stages do
-not have to repeat the (slow) tokenisation over and over again.
-
-Given the constrained runtime of the reproduction we only process a couple of
-hundred samples.
-"""
 from __future__ import annotations
 
 import os

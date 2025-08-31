@@ -1,28 +1,3 @@
-"""src/train.py
-----------------------------------
-Minimal training / calibration utilities for the HQRC demonstration.
-The intention of this module is **not** to carry out a full-blown fine-tune
-of a language model – that would take many GPU-hours – but to provide a
-hook such that the pipeline
-
-   python -m src.main --stage train
-
-executes without errors and produces an artefact that the subsequent
-"evaluate" stage can load.
-
-For the purposes of the open-source reproduction we therefore:
-1. load a small, publicly available causal-LM (defaults to GPT-2 tiny).
-2. run *at most* a handful of optimiser steps so runtime stays < 2 min.
-3. optionally attach the (dummy) HQRC cache and train only these very few
-   additional parameters (≈0.2 %).
-4. save the resulting model weights into the `models/` directory so that
-   evaluate.py can reload them.
-
-NOTE:  In a real research setting you would replace the tiny training loop
-by a proper Trainer/Accelerate routine and point `MODEL_NAME` to a checkpoint
-that has already been quantised with SqueezeLLM etc.
-"""
-
 from __future__ import annotations
 
 import os

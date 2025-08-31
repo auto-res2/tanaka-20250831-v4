@@ -1,22 +1,3 @@
-"""src/main.py
-Entry point for the reproduction of the paper's experiments.
-Run from project root via
-
-    python -m src.main [--stage preprocess|train|eval|exp] [other args]
-
-The code purposefully keeps the default run *very* light weight so that it
-finishes on a single T4 within a couple of minutes while still exercising all
-modules (preprocess → train → evaluate → result plots).
-
-Stages
-------
-1. preprocess : download + tokenise tiny subset of Wikitext-2
-2. train      : run a brief calibration/fine-tune loop (see `src/train.py`)
-3. eval       : measure perplexity, latency, memory (see `src/evaluate.py`)
-4. exp        : run the full, self-contained experiment suite that mirrors the
-                pseudo-code from the manuscript (scaled down version!)
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -34,7 +15,7 @@ from .utils.plotting import save_pdf
 from .utils.cache_modes import CACHE_MODES  # noqa: F401 (side-effect printing)
 
 # directory for images dictated by the instructions
-IMG_DIR = ".research/iteration14/images"  # Updated as per instructions
+IMG_DIR = ".research/iteration15/images"  # Updated as per instructions
 os.makedirs(IMG_DIR, exist_ok=True)
 
 

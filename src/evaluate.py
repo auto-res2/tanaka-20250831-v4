@@ -1,11 +1,3 @@
-"""src/evaluate.py
-----------------------------------
-Utilities to evaluate a (possibly HQRC-augmented) language model.
-We mainly measure perplexity on Wikitext-2, latency, and GPU memory.
-All heavy lifting (dataset download, cache handling) is delegated to helpers
-in `src.utils` so that this module stays readable.
-"""
-
 from __future__ import annotations
 
 import json
