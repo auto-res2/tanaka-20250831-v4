@@ -1,0 +1,10 @@
+{
+  "research_topic": "small language modelの推論でメモリを抑えられるアーキテクチャ",
+  "queries": [
+    "memory-efficient transformer",
+    "low-memory LLM inference",
+    "quantized language model",
+    "parameter-efficient transformer",
+    "pruned transformer inference"
+  ]
+}
