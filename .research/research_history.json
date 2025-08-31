@@ -6,5 +6,82 @@
     "quantized language model",
     "parameter-efficient transformer",
     "pruned transformer inference"
+  ],
+  "research_study_list": [
+    {
+      "title": "Make Pre-trained Model Reversible: From Parameter to Memory Efficient Fine-Tuning"
+    },
+    {
+      "title": "Blockwise Parallel Transformers for Large Context Models"
+    },
+    {
+      "title": "Reformer: The Efficient Transformer"
+    },
+    {
+      "title": "MemoryFormer : Minimize Transformer Computation by Removing Fully-Connected Layers"
+    },
+    {
+      "title": "EL-Attention: Memory Efficient Lossless Attention for Generation"
+    },
+    {
+      "title": "D-LLM: A Token Adaptive Computing Resource Allocation Strategy for Large Language Models"
+    },
+    {
+      "title": "SqueezeLLM: Dense-and-Sparse Quantization"
+    },
+    {
+      "title": "GPT3.int8(): 8-bit Matrix Multiplication for Transformers at Scale"
+    },
+    {
+      "title": "Response Length Perception and  Sequence Scheduling: An LLM-Empowered LLM Inference Pipeline"
+    },
+    {
+      "title": "FlexGen: High-Throughput Generative Inference of Large Language Models with a Single GPU"
+    },
+    {
+      "title": "Extreme Compression of Large Language Models via Additive Quantization"
+    },
+    {
+      "title": "BiE: Bi-Exponent Block Floating-Point for Large Language Models Quantization"
+    },
+    {
+      "title": "QLLM: Accurate and Efficient Low-Bitwidth Quantization for Large Language Models"
+    },
+    {
+      "title": "DuQuant: Distributing Outliers via Dual Transformation Makes Stronger Quantized LLMs"
+    },
+    {
+      "title": "DuQuant: Distributing Outliers via Dual Transformation Makes Stronger Quantized LLMs"
+    },
+    {
+      "title": "Structured Unrestricted-Rank Matrices for Parameter Efficient Finetuning"
+    },
+    {
+      "title": "ReLoRA: High-Rank Training Through Low-Rank Updates"
+    },
+    {
+      "title": "Redesigning the Transformer Architecture with Insights from Multi-particle Dynamical Systems"
+    },
+    {
+      "title": "Redesigning the Transformer Architecture with Insights from Multi-particle Dynamical Systems"
+    },
+    {
+      "title": "PELA: Learning Parameter-Efficient Models with Low-Rank Approximation"
+    },
+    {
+      "title": "A Fast Post-Training Pruning Framework for Transformers"
+    },
+    {
+      "title": "Dynamic Context Pruning for Efficient and Interpretable Autoregressive Transformers"
+    },
+    {
+      "title": "Gradient-Free Structured Pruning with Unlabeled Data"
+    },
+    {
+      "title": "Sparse is Enough in Scaling Transformers"
+    },
+    {
+      "title": "Zero-TPrune: Zero-Shot Token Pruning through Leveraging of the Attention Graph in Pre-Trained Transformers"
+    }
   ]
 }
