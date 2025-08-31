@@ -34,7 +34,7 @@ from .utils.plotting import save_pdf
 from .utils.cache_modes import CACHE_MODES  # noqa: F401 (side-effect printing)
 
 # directory for images dictated by the instructions
-IMG_DIR = ".research/iteration12/images"
+IMG_DIR = ".research/iteration13/images"  # Updated as per instructions
 os.makedirs(IMG_DIR, exist_ok=True)
 
 

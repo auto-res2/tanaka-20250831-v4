@@ -30,7 +30,8 @@ import time
 from typing import Optional
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, AdamW
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from torch.optim import AdamW  # Fixed: AdamW comes from torch.optim
 from tqdm import tqdm
 
 # Relative import – keeps the public API of HQRC helpers inside this package
