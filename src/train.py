@@ -1,3 +1,4 @@
+
 """
 train.py – training / calibration of a (tiny) language model with and
 without the proposed HQRC cache wrapper.  The goal is not to obtain a
@@ -158,6 +159,27 @@ class HQRCWrapper(nn.Module):
     # ------------------------------------------------------------------
     def forward(self, *args, **kwargs):  # type: ignore[override]
         return self.model(*args, **kwargs)
+
+    # ------------------------------------------------------------------
+    # HuggingFace compatibility helpers ---------------------------------
+    # ------------------------------------------------------------------
+    def save_pretrained(self, save_directory: str | os.PathLike, **kwargs):  # noqa: D401
+        """Save the wrapped model so that it can be reloaded later.
+
+        The function delegates the standard parameter tensors to
+        `self.model.save_pretrained(...)` **and** stores the additional
+        HQRC-specific parameters (encoders & decoders) in a separate
+        `hqrc_state.pt` file inside the same directory.
+        """
+        # 1. Save the base model weights/tokeniser config as usual --------
+        self.model.save_pretrained(save_directory, **kwargs)
+
+        # 2. Persist the HQRC parameters ----------------------------------
+        state_to_save = {
+            "encoders": self.encoders.state_dict(),
+            "decoders": self.decoders.state_dict(),
+        }
+        torch.save(state_to_save, os.path.join(save_directory, "hqrc_state.pt"))
 
 
 # ---------------------------------------------------------------------------
