@@ -1,10 +1,11 @@
+```python
 """src/main.py
 Driver that strings together preprocessing, training and evaluation so
 that the full research pipeline can be executed via
     python -m src.main
 in accordance with the grading harness.
 
-All output figures are stored under `.research/iteration1/images/` in PDF
+All output figures are stored under `.research/iteration2/images/` in PDF
 format ready for inclusion in academic material.
 """
 from __future__ import annotations
@@ -16,7 +17,7 @@ from . import preprocess as prep
 from . import train as trn
 from . import evaluate as evl
 
-IMAGES_DIR = Path(".research/iteration1/images")
+IMAGES_DIR = Path(".research/iteration2/images")
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -40,8 +41,9 @@ def main():
         print("\nSummary:")
         print(df)
 
-    print("\nPipeline finished – artefacts:\n  • model  → models/gpt2-wikitext2\n  • data   → data/train|val.bin\n  • plots  → .research/iteration1/images/*.pdf")
+    print("\nPipeline finished – artefacts:\n  • model  → models/gpt2-wikitext2\n  • data   → data/train|val.bin\n  • plots  → .research/iteration2/images/*.pdf")
 
 
 if __name__ == "__main__":
     main()
+```

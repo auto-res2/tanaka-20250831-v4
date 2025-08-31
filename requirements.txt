@@ -1,3 +1,4 @@
+```python
 torch>=2.0
 transformers>=4.38
 bitsandbytes>=0.42.0
@@ -8,3 +9,4 @@ pandas
 matplotlib>=3.8
 seaborn>=0.13
 rouge-score>=0.1
+```

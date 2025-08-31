@@ -1,10 +1,11 @@
+```python
 """src/evaluate.py
 Evaluation helper – computes perplexity on the validation split created
 by `src.preprocess` and produces a tiny memory/latency profile similar to
 what is sketched in the (much larger) research code.
 
 The results (numbers + a PDF figure) are stored in
-`.research/iteration1/images` so that they can be inspected afterwards.
+`.research/iteration2/images` so that they can be inspected afterwards.
 """
 from __future__ import annotations
 
@@ -23,7 +24,10 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from .preprocess import MemMapDataset
 
-IMAGES_DIR = Path(".research/iteration1/images")
+# ---------------------------------------------------------------------------
+# Image output directory (changed as per specification)
+# ---------------------------------------------------------------------------
+IMAGES_DIR = Path(".research/iteration2/images")
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -85,7 +89,7 @@ def evaluate(model_dir: str | os.PathLike = "models/gpt2-wikitext2",
                 ppl = _perplexity(out.logits, inp)
                 total_ppl += ppl
                 n_batches += 1
-        avg_ppl = total_ppl / n_batches
+        avg_ppl = total_ppl / n_batches if n_batches else float('nan')
         mem = max_vram_mb()
         records.append({"seed": seed, "perplexity": avg_ppl, "vram_mb": mem})
         print(f"seed {seed}: ppl={avg_ppl:.2f}, peak VRAM={mem:.0f} MB")
@@ -104,10 +108,17 @@ def evaluate(model_dir: str | os.PathLike = "models/gpt2-wikitext2",
     out_path = IMAGES_DIR / "perplexity_violin.pdf"
     plt.savefig(out_path, bbox_inches="tight", format="pdf")
     plt.close()
-    print(f"✓ Figure saved to {out_path.relative_to(Path.cwd())}")
+
+    # Robust printing – avoid ValueError when paths are on different mounts
+    try:
+        relative = out_path.relative_to(Path.cwd())
+    except ValueError:
+        relative = out_path
+    print(f"✓ Figure saved to {relative}")
 
     return df
 
 
 if __name__ == "__main__":
     evaluate()
+``

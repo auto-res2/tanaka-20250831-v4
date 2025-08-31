@@ -1,3 +1,4 @@
+```python
 """src/train.py
 Training script for a tiny causal-language-model fine-tuning run.
 The goal is NOT to obtain a state-of-the-art model but to demonstrate a
@@ -177,3 +178,4 @@ if __name__ == "__main__":
 
     cfg_override = ast.literal_eval(args.config)
     train(cfg_override)
+``

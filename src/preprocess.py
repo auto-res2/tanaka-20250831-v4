@@ -1,3 +1,4 @@
+```python
 """src/preprocess.py
 Tokenises a small slice of WikiText-2 and stores it as two uint16
 mem-mapped binary files under `data/`:
@@ -100,3 +101,4 @@ def run(seq_len: int = 128,
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     run()
+``
