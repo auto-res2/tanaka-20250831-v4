@@ -103,27 +103,53 @@ class HQRCWrapper(nn.Module):
     def _install_hooks(self):
         """Register forward hooks on *self-attention* blocks in each layer."""
         handles = []
-        for li, layer in enumerate(self.model.transformer.h):  # works for GPT-like arch
+        # GPT-like architectures expose layers under `transformer.h`
+        for li, layer in enumerate(self.model.transformer.h):
             attn_mod = layer.attn
 
-            def _make_hook(layer_idx):
-                def _hook(mod, inputs, output):
-                    # HF re-uses the kv cache if passed – here we *encode* the
-                    # keys & values of the last token in the sequence.
+            def _make_hook(layer_idx: int):
+                # Use a factory to correctly capture the current `layer_idx`
+                def _hook(mod, inputs, output):  # noqa: D401  – HF signature
+                    """Post-process the KV cache coming out of the attention."""
+                    # The attention module returns either
+                    #   (attn_out, present)           or
+                    #   (attn_out, attn_weights, present)
+                    # depending on `output_attentions`.
+                    # During *training* (when labels are passed) GPT-2 forces
+                    # `use_cache=False`, therefore `present` is *None*. We must
+                    # guard against this case to avoid `NoneType` errors.
+                    if output is None:
+                        return output
+
+                    # Standardise the tuple length first -------------------
                     if len(output) == 3:
                         attn_out, attn_weights, past = output
                     else:
                         attn_out, past = output
-                    # past is a tuple(key, value)
-                    k, v = past[0][:, :, -1:], past[1][:, :, -1:]  # most recent step
+                        attn_weights = None
+
+                    # If no KV cache was returned we safely skip compression
+                    if past is None:
+                        return output  # unchanged
+
+                    # `past` is a tuple(key, value) with shape (B, H, T, D)
+                    k, v = past[0][:, :, -1:], past[1][:, :, -1:]  # last step
                     z_k, _ = self.encoders[layer_idx](k)
                     z_v, _ = self.encoders[layer_idx](v)
                     k_recon = self.decoders[layer_idx](z_k)
                     v_recon = self.decoders[layer_idx](z_v)
+                    # In-place replacement so the rest of the model consumes
+                    # the reconstructed tensors. We *do not* detach – gradients
+                    # flow through the auto-encoder.
                     past[0][:, :, -1:] = k_recon
                     past[1][:, :, -1:] = v_recon
-                    # We do *not* detach – reconstruction loss calculated in train.
-                    return (attn_out, past)
+
+                    # Return a tuple of the *same* length as the original
+                    if attn_weights is None:
+                        return (attn_out, past)
+                    else:
+                        return (attn_out, attn_weights, past)
+
                 return _hook
 
             handles.append(attn_mod.register_forward_hook(_make_hook(li)))

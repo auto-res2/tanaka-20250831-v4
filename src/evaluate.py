@@ -4,7 +4,7 @@ without HQRC.  We compute two metrics:
     1. Per-token negative log-likelihood (≈ perplexity)
     2. Memory usage & latency during autoregressive decoding
 The results are returned as a python dictionary and are *also* plotted
-and saved to .research/iteration8/images as vector-pdf files.
+and saved to .research/iteration9/images as vector-pdf files.
 """
 from __future__ import annotations
 
@@ -25,10 +25,10 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from .preprocess import TextDataset
 
 # ---------------------------------------------------------------------------
-#   image output directory (updated to iteration8)
+#   image output directory (updated to iteration9)
 # ---------------------------------------------------------------------------
 
-IMG_DIR = Path(".research/iteration8/images")
+IMG_DIR = Path(".research/iteration9/images")
 IMG_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
@@ -49,10 +49,12 @@ def _synthetic_decode(model, seq_len: int = 64, device="cpu") -> Tuple[float, fl
     prompt = torch.randint(0, vocab_size, (1, 16), device=device)
 
     # prefill --------------------------------------------------------------
-    torch.cuda.reset_peak_memory_stats() if torch.cuda.is_available() else None
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
     t0 = time.perf_counter()
     _ = model(prompt)
-    torch.cuda.synchronize() if torch.cuda.is_available() else None
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
     prefill_t = time.perf_counter() - t0
 
     # decode ---------------------------------------------------------------
@@ -63,7 +65,8 @@ def _synthetic_decode(model, seq_len: int = 64, device="cpu") -> Tuple[float, fl
         out = model(gen[:, -1:])
         next_tok = out.logits[:, -1].argmax(-1, keepdim=True)
         gen = torch.cat([gen, next_tok], dim=-1)
-        torch.cuda.synchronize() if torch.cuda.is_available() else None
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
         decode_times.append(time.perf_counter() - t1)
     return prefill_t / 16, float(np.mean(decode_times))
 
