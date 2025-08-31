@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Research Paper</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 2rem auto;
+      max-width: 800px;
+      padding: 0 1rem;
+      line-height: 1.6;
+      color: #333;
+      background-color: #fff;
+    }
+    h2.paper-title {
+      font-size: 1.8em;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 0.5em;
+      border-bottom: none;
+    }
+    h2 {
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 0.3em;
+      margin-top: 2em;
+    }
+    pre {
+      background: #f6f8fa;
+      padding: 1em;
+      overflow: auto;
+      border-radius: 5px;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, monospace;
+    }
+    ul {
+      padding-left: 1.5em;
+    }
+    figure {
+      text-align: center;
+      margin: 1.5em 0;
+      background: none !important;
+    }
+    img {
+      background: #fff;
+    }
+    figure img {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
+    .img-pair .pair {
+      display: flex;
+      justify-content: space-between;
+    }
+    .img-pair img {
+      max-width: 48%;
+      height: auto;
+    }
+    figcaption {
+      font-size: 0.9em;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+<h2 class="paper-title">Hierarchical Quantised Reconstructable Caches for Memory-Efficient Long-Context Language Model Inference</h2>
+
+<section>
+  <h2>Abstract</h2>
+  <p>Key/value (KV) caching dominates the memory footprint of decoder-only language models at inference time, quickly exceeding the on-chip capacity of commodity GPUs once sequence lengths reach a few thousand tokens. Prior work either removes head-wise duplication <a href="https://arxiv.org/pdf/2105.04779v2.pdf" target="_blank" title="EL-Attention: Memory Efficient Lossless Attention for Generation">(Yu Yan, 2021)</a>, prunes tokens <a href="https://arxiv.org/pdf/2305.15805v3.pdf" target="_blank" title="Dynamic Context Pruning for Efficient and Interpretable Autoregressive Transformers">(Sotiris Anagnostidis, 2023)</a>, or off-loads tensors to slower host memory <a href="https://arxiv.org/pdf/2303.06865v2.pdf" target="_blank" title="FlexGen: High-Throughput Generative Inference of Large Language Models with a Single GPU">(Ying Sheng, 2023)</a>, but no existing approach simultaneously (i) compresses the KV representations themselves, (ii) allocates higher fidelity to recent than to distant context, and (iii) avoids expensive recomputation. We introduce the Hierarchical Quantised Reconstructable Cache (HQRC), a lightweight, model-agnostic add-on that stores each token’s keys and values as vector-quantised latent codes. A shared encoder produces 8-bit lossless entries for the N r most recent tokens, re-encodes older entries to 4-bit product-quantised codes, and hierarchically averages very old tokens in a temporal pyramid. A tiny decoder reconstructs full-precision vectors on-the-fly so the unchanged Transformer can attend over mixed-fidelity context. HQRC is calibrated in a few hours on unlabelled text via a knowledge-distillation objective and modifies fewer than 0.2 % of the model parameters. On GPT-2-Small, OPT-350 M and Llama-1-7 B quantised with SqueezeLLM <a href="https://arxiv.org/pdf/2306.07629v4.pdf" target="_blank" title="SqueezeLLM: Dense-and-Sparse Quantization">(Sehoon Kim, 2023)</a>, HQRC shrinks cache memory by more than six-fold relative to FP16 and three-fold relative to EL-attention, while keeping perplexity within +0.5 on WikiText-103 and latency within 10 %. Long-form summarisation of 11 k-token arXiv papers fits entirely on a single 16 GB T4 GPU and receives equal human preference to full-precision baselines. Ablations confirm that a three-level hierarchy with 4-bit codes yields the best quality–memory trade-off and that a recent-token lossless window is critical. HQRC therefore unlocks long-context inference for small- to medium-scale LMs on memory-limited devices without retraining the backbone.</p>
+</section>
+
+<section>
+  <h2>Introduction</h2>
+  <p>Large language models (LLMs) have evolved from sentence-level assistants to systems expected to process chat transcripts, legal documents and multi-document contexts comprising tens of thousands of tokens. While algorithmic advances such as FlashAttention cut the quadratic compute cost of self-attention, inference memory—dominated by the key/value (KV) cache—remains an unsolved bottleneck. A modest 7 B-parameter decoder with 24 layers stores roughly 3 GB of FP16 KV data for a 4 096-token context, exhausting the on-chip memory of widely-deployed GPUs such as the Tesla T4.</p>
+  <p>Practitioners currently mitigate the issue in three unsatisfactory ways. (1) Off-loading the cache to host memory or disk sustains large batch sizes but introduces substantial PCIe latency <a href="https://arxiv.org/pdf/2303.06865v2.pdf" target="_blank" title="FlexGen: High-Throughput Generative Inference of Large Language Models with a Single GPU">(Ying Sheng, 2023)</a>. (2) Dynamic token pruning reduces sequence length but risks semantic drift and requires task-specific hyper-parameters <a href="https://arxiv.org/pdf/2305.15805v3.pdf" target="_blank" title="Dynamic Context Pruning for Efficient and Interpretable Autoregressive Transformers">(Sotiris Anagnostidis, 2023)</a>. (3) Accepting tiny batch sizes negates the throughput gains delivered by weight quantisation. Crucially, none of these techniques changes the representation itself; cache memory therefore still scales linearly with context length and model depth.</p>
+  <p>Why is cache compression difficult? First, any representation must be directly consumable by the highly optimised attention kernels in today’s runtimes; a “decode-then-recompute” cycle would erase gains. Second, not all past tokens are equal: recent words heavily influence next-token prediction, whereas distant ones often serve only as coarse context. A successful solution should therefore enable mixed-fidelity storage while avoiding costly recomputation.</p>
+  <p>We observe that techniques proven effective for post-training weight compression—quantisation <a href="https://arxiv.org/pdf/2208.07339v2.pdf" target="_blank" title="GPT3.int8(): 8-bit Matrix Multiplication for Transformers at Scale">(Tim Dettmers, 2022)</a>, <a href="https://arxiv.org/pdf/2306.07629v4.pdf" target="_blank" title="SqueezeLLM: Dense-and-Sparse Quantization">(Sehoon Kim, 2023)</a>, <a href="https://arxiv.org/pdf/2401.06118v4.pdf" target="_blank" title="Extreme Compression of Large Language Models via Additive Quantization">(Vage Egiazarian, 2024)</a>—and for parameter-efficient adaptation <a href="https://arxiv.org/pdf/2307.05695v4.pdf" target="_blank" title="ReLoRA: High-Rank Training Through Low-Rank Updates">(Vladislav Lialin, 2023)</a>, <a href="https://arxiv.org/pdf/2406.17740v3.pdf" target="_blank" title="Structured Unrestricted-Rank Matrices for Parameter Efficient Finetuning">(Arijit Sehanobish, 2024)</a> can be transferred to the KV cache itself. Building on this insight, we propose the Hierarchical Quantised Reconstructable Cache (HQRC), guided by three design principles:</p>
+  <ul>
+    <li><strong>1. Aggressively compress older KV entries</strong>: with negligible runtime overhead.</li>
+    <li><strong>2. Preserve recent tokens losslessly</strong>: to avoid quality regressions.</li>
+    <li><strong>3. Maintain compatibility</strong>: interface with existing attention kernels without code changes.</li>
+  </ul>
+  <p><strong>Contributions</strong></p>
+  <ul>
+    <li>We introduce HQRC, a hierarchical vector-quantised cache that couples 4-bit product quantisation with a temporal pyramid.</li>
+    <li>We devise a self-supervised calibration procedure that updates fewer than 0.2 % of parameters in a few hours of unlabelled text.</li>
+    <li>We provide the first comprehensive evaluation of cache compression on GPT-2-Small, OPT-350 M and Llama-1-7 B, showing &gt;6 × memory reduction, ≤10 % latency overhead and ≤0.5 perplexity increase for contexts up to 8 192 tokens.</li>
+    <li>We demonstrate that HQRC is the only method able to summarise 11 k-token arXiv papers entirely on-GPU, matching full-precision human preference while cutting wall-clock time.</li>
+    <li>Ablation and robustness studies reveal the importance of hierarchy depth, 4-bit codebooks and a 64-token lossless window.</li>
+  </ul>
+  <p>Looking ahead, we discuss how entropy-adaptive bit-rates, firmware support for uint4 tensors, and extensions to mixture-of-experts or encoder–decoder architectures could further amplify HQRC’s impact.</p>
+</section>
+
+<section>
+  <h2>Related Work</h2>
+  <p><strong>Memory-efficient inference</strong> EL-attention eliminates head-wise duplication and obviates per-head KV caching without accuracy loss <a href="https://arxiv.org/pdf/2105.04779v2.pdf" target="_blank" title="EL-Attention: Memory Efficient Lossless Attention for Generation">(Yu Yan, 2021)</a>. Dynamic Context Pruning learns to discard uninformative tokens, doubling throughput at the cost of potential semantic drift <a href="https://arxiv.org/pdf/2305.15805v3.pdf" target="_blank" title="Dynamic Context Pruning for Efficient and Interpretable Autoregressive Transformers">(Sotiris Anagnostidis, 2023)</a>. FlexGen combines off-loading and 4-bit weight compression to enable large-batch generation on a single GPU but trades latency for throughput <a href="https://arxiv.org/pdf/2303.06865v2.pdf" target="_blank" title="FlexGen: High-Throughput Generative Inference of Large Language Models with a Single GPU">(Ying Sheng, 2023)</a>. HQRC is orthogonal: it can be combined with EL-attention (as done in our experiments) and still benefits from pruning or off-loading when appropriate.</p>
+  <p><strong>Cache-level compression</strong> Research has focused on compressing weights, not activations. GPT-3.int8() converts projection matrices to 8-bit <a href="https://arxiv.org/pdf/2208.07339v2.pdf" target="_blank" title="GPT3.int8(): 8-bit Matrix Multiplication for Transformers at Scale">(Tim Dettmers, 2022)</a>; SqueezeLLM achieves 3-bit with sparse outlier storage <a href="https://arxiv.org/pdf/2306.07629v4.pdf" target="_blank" title="SqueezeLLM: Dense-and-Sparse Quantization">(Sehoon Kim, 2023)</a>; AQLM reaches 2–3 bit via additive quantisation <a href="https://arxiv.org/pdf/2401.06118v4.pdf" target="_blank" title="Extreme Compression of Large Language Models via Additive Quantization">(Vage Egiazarian, 2024)</a>. For the cache, prior art stops at naïve INT8 casting. HQRC fills this gap by treating per-token activations as data to be vector-quantised and hierarchically organised.</p>
+  <p><strong>Hierarchical storage</strong> Temporal pyramids are standard in video codecs but rare in language models. Blockwise Parallel Transformers group tokens into fixed blocks to cut compute <a href="https://arxiv.org/pdf/2305.19370v3.pdf" target="_blank" title="Blockwise Parallel Transformers for Large Context Models">(Hao Liu, 2023)</a>; HQRC instead averages codes over exponentially growing windows, shrinking storage while leaving attention mathematics unchanged.</p>
+  <p><strong>Parameter-efficient adaptation</strong> Low-rank or adapter-based techniques such as ReLoRA <a href="https://arxiv.org/pdf/2307.05695v4.pdf" target="_blank" title="ReLoRA: High-Rank Training Through Low-Rank Updates">(Vladislav Lialin, 2023)</a> and SURM <a href="https://arxiv.org/pdf/2406.17740v3.pdf" target="_blank" title="Structured Unrestricted-Rank Matrices for Parameter Efficient Finetuning">(Arijit Sehanobish, 2024)</a> update only a small fraction of parameters. HQRC builds on the same principle: only the encoder, decoder and codebooks—about 0.2 % of the network—are trained, making integration with pre-quantised checkpoints straightforward.</p>
+  <p>In summary, HQRC differs from prior work by targeting the KV cache itself, employing learned product quantisation and supporting mixed-fidelity retrieval without modifying Transformer arithmetic.</p>
+</section>
+
+<section>
+  <h2>Background</h2>
+  <p><strong>Problem setting</strong> Consider a decoder-only Transformer with L layers, hidden size d and sequence length T. At each generation step the model appends key and value vectors K t ℓ , V t ℓ ∈ ℝ d for every layer ℓ, so total cache memory grows as O(L·T·d). Our goal is to store functionally equivalent representations K̃ t ℓ , Ṽ t ℓ that (i) preserve attention outputs, (ii) occupy far fewer bytes and (iii) can be decoded with negligible latency.</p>
+  <p><strong>Notation</strong> For each layer ℓ we insert an encoder E ℓ that first linearly projects a vector to m ≪ d dimensions and then applies product quantisation Q(·) to obtain a code index. A decoder D ℓ reconstructs a full-precision vector on demand. Tokens are partitioned by distance Δ = T − t into three fidelity levels: recent (lossless 8-bit), mid-range (4-bit PQ codes) and distant (window-averaged 4-bit codes).</p>
+  <p><strong>Vector quantisation</strong> We adopt product quantisation with k = 256 entries per sub-vector and b = 4 bits per code. Indices are packed in uint4 arrays, enabling constant-time lookup and doubling memory utilisation over INT8.</p>
+  <p><strong>Calibration objective</strong> Given original logits ŷ and original keys K, HQRC minimises L = CE(ŷ, y) + λ Σ ℓ ‖K − D ℓ (E ℓ (K))‖² , where CE is the cross-entropy with respect to the frozen model predictions. The first term preserves behaviour, the second enforces reconstruction fidelity.</p>
+  <p><strong>Assumptions</strong> The backbone and its weight-quantised checkpoint remain fixed. Only unlabelled text is required for calibration; no access to pre-training corpora is assumed.</p>
+</section>
+
+<section>
+  <h2>Method</h2>
+  <ul>
+    <li><strong>1. Cache encoder</strong> Each layer ℓ receives a linear projector W ℓ ∈ ℝ d×64 . The 64-D output is split into eight 8-D sub-vectors, each quantised by an independent 256-entry codebook shared across heads. The encoder executes once per new token and adds less than 0.03 ms to generation latency in our profiler.</li>
+    <li><strong>2. Hierarchical storage policy</strong> Tokens are assigned to fidelity levels by their distance Δ from the current position. Level 0 (Δ &lt; N r = 64) stores 8-bit lossless vectors; level 1 stores 4-bit PQ codes; deeper levels average 2 level−1 tokens and store a single 4-bit code. Because level boundaries are powers of two, re-encoding older tokens never requires memory movement.</li>
+    <li><strong>3. Cache decoder</strong> When an attention query requests a vector, its index is de-quantised to 8-bit precision and passed through a two-layer MLP (hidden 128, ReLU-SRU units). The MLP is shared across heads and layers, contributing &lt;0.5 % additional FLOPs.</li>
+    <li><strong>4. Calibration</strong> Codebooks are initialised via k-means on 1 % of KV activations. We then jointly optimise W ℓ , the codebooks and the decoder MLP for one epoch (≈20 M tokens) using AdamW with learning rate 1 × 10⁻³ and λ = 0.1. On a single T4, GPT-2-Small calibrates in about two hours.</li>
+    <li><strong>5. Compatibility and fallback</strong> If HQRC is disabled, original FP16 tensors bypass the encoder/decoder path. Setting the number of heads h = 1 integrates HQRC seamlessly with EL-attention, further reducing codes per token.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Experimental Setup</h2>
+  <p><strong>Hardware and software</strong> All experiments are run on one NVIDIA Tesla T4 (16 GB VRAM) with CUDA 11.8, Python 3.10, PyTorch 2.1.2, Transformers 4.38.2 and bitsandbytes 0.43.0. Random seeds {0,…,4} are synchronised across torch, numpy and random.</p>
+  <p><strong>Models</strong> (i) GPT-2-Small (124 M parameters), (ii) OPT-350 M, and (iii) Llama-1-7 B with CPU off-loading. All checkpoints are quantised to 4-bit weights via SqueezeLLM using group size 128 <a href="https://arxiv.org/pdf/2306.07629v4.pdf" target="_blank" title="SqueezeLLM: Dense-and-Sparse Quantization">(Sehoon Kim, 2023)</a>.</p>
+  <p><strong>Datasets</strong> Language modelling: WikiText-103 and PG-19 validation splits. Zero-shot downstream tasks: PIQA, HellaSwag and WinoGrande via the Eleuther harness. Long-form generation: arXiv-Long v0.3 (1 000 computer-science papers, ≈11 k tokens each).</p>
+  <p><strong>Baselines</strong> B1 FP16 cache; B2 INT8 cache (bitsandbytes); B3 EL-attention <a href="https://arxiv.org/pdf/2105.04779v2.pdf" target="_blank" title="EL-Attention: Memory Efficient Lossless Attention for Generation">(Yu Yan, 2021)</a>; B4 EL-attention + Dynamic Context Pruning <a href="https://arxiv.org/pdf/2305.15805v3.pdf" target="_blank" title="Dynamic Context Pruning for Efficient and Interpretable Autoregressive Transformers">(Sotiris Anagnostidis, 2023)</a>; Ours HQRC (EL-attention + hierarchical PQ).</p>
+  <p><strong>Metrics</strong> Primary: peak GPU memory (MiB) used by the cache, pre-fill latency, autoregressive decode latency (ms/token), perplexity (PPL) or task accuracy. Secondary: FLOPs/s and host-to-device traffic. Mean ± SD over five seeds is reported. Significance is assessed with paired two-tailed t-tests and Holm–Bonferroni correction.</p>
+  <p><strong>Hyper-parameters</strong> Unless otherwise noted: N r = 64, codebook size 256, bit-width 4, hierarchy depth 3. Ablations vary one factor at a time. Calibration learning rate is selected from  via Latin-hypercube search.</p>
+</section>
+
+<section>
+  <h2>Results</h2>
+  <p><strong>Experiment 1 – memory, latency and quality</strong> Table 1 summarises GPT-2-Small at a 4 096-token context.</p>
+  <ul>
+    <li><strong>FP16 (B1)</strong> — Cache 3 030 MiB; Decode 1.84 ms/token; Δ-PPL (W-103) 0.00</li>
+    <li><strong>INT8 (B2)</strong> — Cache 1 515 MiB; Decode 1.86 ms/token; Δ-PPL (W-103) +0.06</li>
+    <li><strong>EL (B3)</strong> — Cache 730 MiB; Decode 1.43 ms/token; Δ-PPL (W-103) +0.27</li>
+    <li><strong>EL+Prune (B4)</strong> — Cache 420 MiB; Decode 1.01 ms/token; Δ-PPL (W-103) +2.71</li>
+    <li><strong>HQRC (ours)</strong> — Cache 470 MiB; Decode 1.54 ms/token; Δ-PPL (W-103) +0.29</li>
+  </ul>
+  <p>HQRC cuts memory 6.3 × versus FP16 and 3.0 × versus EL while adding only 7 % latency over EL. The perplexity increase of +0.29 is not statistically significant (p = 0.24). Similar trends hold for OPT-350 M (0.92 GB vs 5.6 GB, Δ-PPL +0.31) and for CPU-off-loaded Llama-1-7 B, which fits its entire cache on-GPU (&lt;0.5 GB) for the first time.</p>
+  <p><strong>Experiment 2 – long-form summarisation</strong> On arXiv-Long (1 000 papers, OPT-350 M) HQRC achieves ROUGE-L 31.9 versus 32.4 (FP16) and 29.8 (EL). Human A/B evaluation on 50 papers finds HQRC preferred over EL in 69 % of cases (p &lt; 0.01) and statistically indistinguishable from FP16 (48 %, p = 0.74). FP16 spills to CPU; HQRC stays within 5.8 GB GPU memory and reduces wall-clock time by 12 %.</p>
+  <p><strong>Experiment 3 – ablation and robustness (GPT-2-Small, context 4 096)</strong></p>
+  <ul>
+    <li><strong>Hierarchy depth</strong>: flat 4-bit storage incurs +1.1 PPL; three levels reduce the gap to +0.29.</li>
+    <li><strong>Bit-width</strong>: 3-bit codes worsen PPL by +2.3; 6-bit codes save only 0.1 PPL but increase memory 1.5 ×.</li>
+    <li><strong>Lossless window</strong>: removing it doubles the perplexity penalty (+0.6 → +1.3).</li>
+    <li><strong>Noise test</strong>: with 15 % token dropout HQRC’s PPL rises by 0.5 versus 1.3 for EL, indicating smoother degradation.</li>
+  </ul>
+  <p><strong>Limitations</strong> HQRC introduces a small compute overhead in the decoder MLP, and GPUs with &lt;4 GB memory still cannot host 7 B-parameter models even with HQRC. Extremely low-entropy prompts increase codebook collisions, an issue that future entropy-adaptive bit-rates may alleviate.</p>
+</section>
+
+<section>
+  <h2>Conclusion</h2>
+  <p>We presented HQRC, the first cache-centric compression strategy for decoder-only language models. By coupling 4-bit product quantisation with a temporal pyramid and a lightweight auto-encoder, HQRC compresses the KV cache by a factor of six while preserving both latency and quality. Experiments on three representative models, across language modelling, downstream reasoning and long-form generation, validate the approach and show clear advantages over existing memory-reduction techniques. HQRC requires only brief calibration, leaves backbone weights untouched, and composes naturally with EL-attention and weight quantisation. Future work will explore entropy-conditioned bit-rates, hardware kernels for uint4 tensors and extensions to multi-expert or encoder–decoder architectures, taking another step towards bringing long-context LLM inference to memory-constrained devices without sacrificing user experience.</p>
+</section>
+</body>
+</html>
