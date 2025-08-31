@@ -94,6 +94,9 @@ class HQRCWrapper(nn.Module):
     def __init__(self, hf_model: AutoModelForCausalLM):
         super().__init__()
         self.model = hf_model
+        # expose the underlying config so that downstream code (e.g.
+        # evaluate.py) can access `model.config` transparently.
+        self.config = hf_model.config  # <-- attribute delegation
         hs = hf_model.config.hidden_size
         nl = hf_model.config.num_hidden_layers
         self.encoders = nn.ModuleList([_HQRCEncoder(hs) for _ in range(nl)])
@@ -112,13 +115,6 @@ class HQRCWrapper(nn.Module):
                 # Use a factory to correctly capture the current `layer_idx`
                 def _hook(mod, inputs, output):  # noqa: D401  – HF signature
                     """Post-process the KV cache coming out of the attention."""
-                    # The attention module returns either
-                    #   (attn_out, present)           or
-                    #   (attn_out, attn_weights, present)
-                    # depending on `output_attentions`.
-                    # During *training* (when labels are passed) GPT-2 forces
-                    # `use_cache=False`, therefore `present` is *None*. We must
-                    # guard against this case to avoid `NoneType` errors.
                     if output is None:
                         return output
 
@@ -139,9 +135,6 @@ class HQRCWrapper(nn.Module):
                     z_v, _ = self.encoders[layer_idx](v)
                     k_recon = self.decoders[layer_idx](z_k)
                     v_recon = self.decoders[layer_idx](z_v)
-                    # In-place replacement so the rest of the model consumes
-                    # the reconstructed tensors. We *do not* detach – gradients
-                    # flow through the auto-encoder.
                     past[0][:, :, -1:] = k_recon
                     past[1][:, :, -1:] = v_recon
 
@@ -164,17 +157,8 @@ class HQRCWrapper(nn.Module):
     # HuggingFace compatibility helpers ---------------------------------
     # ------------------------------------------------------------------
     def save_pretrained(self, save_directory: str | os.PathLike, **kwargs):  # noqa: D401
-        """Save the wrapped model so that it can be reloaded later.
-
-        The function delegates the standard parameter tensors to
-        `self.model.save_pretrained(...)` **and** stores the additional
-        HQRC-specific parameters (encoders & decoders) in a separate
-        `hqrc_state.pt` file inside the same directory.
-        """
-        # 1. Save the base model weights/tokeniser config as usual --------
+        """Save the wrapped model so that it can be reloaded later."""
         self.model.save_pretrained(save_directory, **kwargs)
-
-        # 2. Persist the HQRC parameters ----------------------------------
         state_to_save = {
             "encoders": self.encoders.state_dict(),
             "decoders": self.decoders.state_dict(),
@@ -185,6 +169,7 @@ class HQRCWrapper(nn.Module):
 # ---------------------------------------------------------------------------
 #   TRAIN ROUTINE
 # ---------------------------------------------------------------------------
+
 
 def _save(model: nn.Module, tokenizer: AutoTokenizer, out_dir: Path):
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -210,7 +195,7 @@ def train(config: Dict, dataset: TextDataset) -> Tuple[nn.Module, AutoTokenizer]
 
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float16 if device.type == "cuda" else torch.float32,
+        torch_dtype=(torch.float16 if (device.type == "cuda" and cache_mode == "fp16") else torch.float32),
     )
     if cache_mode == "hqrc":
         model = HQRCWrapper(base_model)

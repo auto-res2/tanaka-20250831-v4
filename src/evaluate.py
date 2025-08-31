@@ -5,7 +5,7 @@ without HQRC.  We compute two metrics:
     1. Per-token negative log-likelihood (≈ perplexity)
     2. Memory usage & latency during autoregressive decoding
 The results are returned as a python dictionary and are *also* plotted
-and saved to .research/iteration10/images as vector-pdf files.
+and saved to .research/iteration11/images as vector-pdf files.
 """
 from __future__ import annotations
 
@@ -26,10 +26,10 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from .preprocess import TextDataset
 
 # ---------------------------------------------------------------------------
-#   image output directory (updated to iteration10)
+#   image output directory (updated to iteration11)
 # ---------------------------------------------------------------------------
 
-IMG_DIR = Path(".research/iteration10/images")
+IMG_DIR = Path(".research/iteration11/images")
 IMG_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
