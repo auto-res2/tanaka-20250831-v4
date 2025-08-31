@@ -133,7 +133,6 @@ def train(config: Dict[str, Any] | None = None):
     step, running_loss = 0, 0.0
     start_time = time.time()
     pbar = tqdm(total=total_steps, desc="training", ncols=80)
-    loss_fn = torch.nn.CrossEntropyLoss()
 
     for epoch in range(config["epochs"]):
         for batch in train_loader:

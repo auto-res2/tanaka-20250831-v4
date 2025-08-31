@@ -4,7 +4,7 @@ that the full research pipeline can be executed via
     python -m src.main
 in accordance with the grading harness.
 
-All output figures are stored under `.research/iteration3/images/` in PDF
+All output figures are stored under `.research/iteration4/images/` in PDF
 format ready for inclusion in academic material.
 """
 from __future__ import annotations
@@ -16,7 +16,7 @@ from . import evaluate as evl
 from . import preprocess as prep
 from . import train as trn
 
-IMAGES_DIR = Path(".research/iteration3/images")
+IMAGES_DIR = Path(".research/iteration4/images")
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -45,7 +45,7 @@ def main():
         print(df)
 
     print(
-        "\nPipeline finished – artefacts:\n  • model  → models/gpt2-wikitext2\n  • data   → data/train|val.bin\n  • plots  → .research/iteration3/images/*.pdf"
+        "\nPipeline finished – artefacts:\n  • model  → models/gpt2-wikitext2\n  • data   → data/train|val.bin\n  • plots  → .research/iteration4/images/*.pdf"
     )
 
 

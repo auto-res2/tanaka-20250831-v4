@@ -3,13 +3,11 @@ Evaluation helper – computes perplexity on the validation split created
 by `src.preprocess` and produces a tiny memory/latency profile similar to
 what is sketched in the (much larger) research code.
 
-The results (numbers + a PDF figure) are stored in
-`.research/iteration3/images` so that they can be inspected afterwards.
+All images are now saved under `.research/iteration4/images` as required.
 """
 from __future__ import annotations
 
 import os
-import time
 from pathlib import Path
 from typing import Any, Dict
 
@@ -26,7 +24,7 @@ from .preprocess import MemMapDataset
 # ---------------------------------------------------------------------------
 # Image output directory (updated as per specification)
 # ---------------------------------------------------------------------------
-IMAGES_DIR = Path(".research/iteration3/images")
+IMAGES_DIR = Path(".research/iteration4/images")
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -43,14 +41,6 @@ def set_seed(seed: int = 0):
     torch.cuda.manual_seed_all(seed)
 
 
-def _perplexity(logits: torch.Tensor, targets: torch.Tensor):
-    """Compute perplexity for a batch."""
-    ce = F.cross_entropy(
-        logits.view(-1, logits.size(-1)), targets.view(-1), reduction="mean"
-    )
-    return float(torch.exp(ce))
-
-
 def max_vram_mb():
     return torch.cuda.max_memory_allocated() / 1024 ** 2
 
@@ -65,6 +55,7 @@ def evaluate(
     batch_size: int = 8,
     seeds: list[int] | None = None,
 ) -> pd.DataFrame:
+    """Run evaluation for a set of *seeds* and return a DataFrame."""
     if seeds is None:
         seeds = [0, 1, 2]
 
@@ -87,8 +78,10 @@ def evaluate(
         with torch.no_grad():
             for batch in pbar:
                 inp = batch.to(device)
-                out = model(inp, use_cache=True)
-                ppl = _perplexity(out.logits, inp)
+                # Use built-in loss computation to avoid float16 overflow issues
+                out = model(inp, labels=inp, use_cache=True)
+                loss = out.loss.float()
+                ppl = float(torch.exp(loss))
                 total_ppl += ppl
                 n_batches += 1
         avg_ppl = total_ppl / n_batches if n_batches else float("nan")

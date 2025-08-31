@@ -36,7 +36,8 @@ class MemMapDataset:
 
     def __getitem__(self, idx: int):
         start = idx * self.seq_len
-        arr = self.fp[start : start + self.seq_len]
+        # Copy slice to avoid non-writable NumPy view warning inside PyTorch
+        arr = np.array(self.fp[start : start + self.seq_len], copy=True)
         return torch.as_tensor(arr, dtype=torch.long)
 
 
