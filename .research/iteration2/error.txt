@@ -1,0 +1,13 @@
+ERROR: Invalid requirement: '```python': Expected package name at the start of dependency specifier
+    ```python
+    ^ (from line 1 of requirements.txt)
+Traceback (most recent call last):
+  File "<frozen runpy>", line 189, in _run_module_as_main
+  File "<frozen runpy>", line 159, in _get_module_details
+  File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/runner/work/tanaka-20250831-v4/tanaka-20250831-v4/src/main.py", line 1
+    ```python
+    ^
+SyntaxError: invalid syntax
