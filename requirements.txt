@@ -1,10 +1,10 @@
 torch>=2.0
-transformers>=4.38
-bitsandbytes>=0.42.0
+transformers>=4.37
 datasets>=2.16
-tqdm
 numpy
 pandas
-matplotlib>=3.8
-seaborn>=0.13
-rouge-score>=0.1
+tqdm
+matplotlib
+seaborn
+scipy
+yaml

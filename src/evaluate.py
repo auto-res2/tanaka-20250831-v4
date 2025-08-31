@@ -1,128 +1,120 @@
-"""src/evaluate.py
-Evaluation helper – computes perplexity on the validation split created
-by `src.preprocess` and produces a tiny memory/latency profile similar to
-what is sketched in the (much larger) research code.
-
-All images are now saved under `.research/iteration5/images` as required.
+"""
+evaluate.py – utilities to evaluate the (tiny) LM trained with and
+without HQRC.  We compute two metrics:
+    1. Per-token negative log-likelihood (≈ perplexity)
+    2. Memory usage & latency during autoregressive decoding
+The results are returned as a python dictionary and are *also* plotted
+and saved to .research/iteration6/images as vector-pdf files.
 """
 from __future__ import annotations
 
-import os
+import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
-from tqdm.auto import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import seaborn as sns
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
-from .preprocess import MemMapDataset
+from .preprocess import TextDataset
 
-# ---------------------------------------------------------------------------
-# Image output directory (updated as per specification)
-# ---------------------------------------------------------------------------
-IMAGES_DIR = Path(".research/iteration5/images")
-IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-
+IMG_DIR = Path(".research/iteration6/images")
+IMG_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# helpers
+#   helper
 # ---------------------------------------------------------------------------
 
-def set_seed(seed: int = 0):
-    import random, numpy as np, torch
-
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+def _gpu_mem_gib() -> float:
+    if not torch.cuda.is_available():
+        return float("nan")
+    torch.cuda.synchronize()
+    return torch.cuda.max_memory_allocated() / 1024 ** 3
 
 
-def max_vram_mb():
-    return torch.cuda.max_memory_allocated() / 1024 ** 2
+@torch.no_grad()
+def _synthetic_decode(model, seq_len: int = 64, device="cpu") -> Tuple[float, float]:
+    # create a random prompt of length 16 ----------------------------------
+    vocab_size = int(model.config.vocab_size)
+    prompt = torch.randint(0, vocab_size, (1, 16), device=device)
+
+    # prefill --------------------------------------------------------------
+    torch.cuda.reset_peak_memory_stats() if torch.cuda.is_available() else None
+    t0 = time.perf_counter()
+    _ = model(prompt)
+    torch.cuda.synchronize() if torch.cuda.is_available() else None
+    prefill_t = time.perf_counter() - t0
+
+    # decode ---------------------------------------------------------------
+    gen = prompt
+    decode_times = []
+    for _ in range(seq_len):
+        t1 = time.perf_counter()
+        out = model(gen[:, -1:])
+        next_tok = out.logits[:, -1].argmax(-1, keepdim=True)
+        gen = torch.cat([gen, next_tok], dim=-1)
+        torch.cuda.synchronize() if torch.cuda.is_available() else None
+        decode_times.append(time.perf_counter() - t1)
+    return prefill_t / 16, float(np.mean(decode_times))
 
 
 # ---------------------------------------------------------------------------
-# main eval routine
+#   public interface
 # ---------------------------------------------------------------------------
 
-def evaluate(
-    model_dir: str | os.PathLike = "models/gpt2-wikitext2",
-    seq_len: int = 128,
-    batch_size: int = 8,
-    seeds: list[int] | None = None,
-) -> pd.DataFrame:
-    """Run evaluation for a set of *seeds* and return a DataFrame."""
-    if seeds is None:
-        seeds = [0, 1, 2]
+def evaluate(model: AutoModelForCausalLM, tokenizer: AutoTokenizer, dataset: TextDataset, cache_mode: str) -> Dict:
+    device = next(model.parameters()).device
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    tokenizer = AutoTokenizer.from_pretrained(model_dir)
-    # Load model in full precision to minimise numerical issues
-    model = AutoModelForCausalLM.from_pretrained(model_dir, torch_dtype=torch.float32)
-    model.to(device).eval()
-
-    val_ds = MemMapDataset("data/val.bin", seq_len)
-    loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, drop_last=True)
-
-    if len(loader) == 0:
-        raise RuntimeError(
-            "Validation set is empty. Ensure that `max_val_tokens`>0 when "
-            "building the dataset."
-        )
-
-    records = []
-
-    for seed in seeds:
-        set_seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.reset_peak_memory_stats()
-        pbar = tqdm(loader, desc=f"eval s={seed}", leave=False, ncols=80)
-        total_ppl, n_batches = 0.0, 0
+    # ---------- Perplexity ----------------------------------------------
+    nll_total, n_tokens = 0.0, 0
+    for batch in dataset.dataloader(batch_size=4):
+        batch = batch.to(device)
         with torch.no_grad():
-            for batch in pbar:
-                inp = batch.to(device)
-                out = model(inp, labels=inp, use_cache=True)
-                loss = out.loss.float()
-                if torch.isnan(loss):
-                    # Extremely unlikely with fp32, but we guard just in case
-                    continue
-                ppl = float(torch.exp(loss))
-                total_ppl += ppl
-                n_batches += 1
-        avg_ppl = total_ppl / n_batches if n_batches else float("nan")
-        mem = max_vram_mb()
-        records.append({"seed": seed, "perplexity": avg_ppl, "vram_mb": mem})
-        print(f"seed {seed}: ppl={avg_ppl:.2f}, peak VRAM={mem:.0f} MB")
+            out = model(batch, labels=batch)
+        nll_total += out.loss.item() * batch.numel()
+        n_tokens += batch.numel()
+    ppl = np.exp(nll_total / n_tokens)
 
-    df = pd.DataFrame.from_records(records)
+    # ---------- Memory & latency ----------------------------------------
+    prefill_ms, decode_ms = _synthetic_decode(model, seq_len=64, device=device)
+    peak_mem = _gpu_mem_gib()
 
-    # simple visualisation – violin plot of ppl
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
-    plt.figure(figsize=(4, 3))
-    sns.violinplot(data=df, y="perplexity", inner="points", color="skyblue")
-    plt.title("Validation perplexity distribution (seeds)")
-    plt.ylabel("perplexity")
-    plt.tight_layout()
-    out_path = IMAGES_DIR / "perplexity_violin.pdf"
-    plt.savefig(out_path, bbox_inches="tight", format="pdf")
-    plt.close()
-
-    # Robust printing – avoid ValueError when paths are on different mounts
-    try:
-        relative = out_path.relative_to(Path.cwd())
-    except ValueError:
-        relative = out_path
-    print(f"✓ Figure saved to {relative}")
-
-    return df
+    results = {"cache_mode": cache_mode,
+               "ppl": ppl,
+               "prefill_ms_tok": prefill_ms * 1e3,
+               "decode_ms_tok": decode_ms * 1e3,
+               "peak_mem_gib": peak_mem}
+    return results
 
 
-if __name__ == "__main__":
-    evaluate()
+# ---------------------------------------------------------------------------
+#   plotting helpers (bar chart) – saved as PDF ---------------------------
+# ---------------------------------------------------------------------------
+
+def make_plots(df: pd.DataFrame):
+    sns.set_theme(style="whitegrid")
+    fig, ax = plt.subplots(figsize=(4, 3))
+    sns.barplot(data=df, x="cache_mode", y="ppl", ax=ax)
+    for p in ax.patches:
+        ax.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()),
+                    ha='center', va='bottom', fontsize=8)
+    ax.set_ylabel("Perplexity")
+    fig.tight_layout()
+    out_path = IMG_DIR / "perplexity.pdf"
+    fig.savefig(out_path, bbox_inches="tight")
+
+    fig2, ax2 = plt.subplots(figsize=(4, 3))
+    sns.barplot(data=df, x="cache_mode", y="peak_mem_gib", ax=ax2)
+    for p in ax2.patches:
+        ax2.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()),
+                     ha='center', va='bottom', fontsize=8)
+    ax2.set_ylabel("Peak memory (GiB)")
+    fig2.tight_layout()
+    fig2.savefig(IMG_DIR / "memory.pdf", bbox_inches="tight")
+
+    print("Figures saved to", IMG_DIR)
