@@ -1,3 +1,11 @@
-```
-(no changes)
-```
+# config/default.yaml
+# (Optional) hyper-parameters for quick reproduction
+training:
+  lr: 2e-5
+  max_steps: 25
+  use_hqrc: true
+preprocess:
+  dataset: wikitext2
+  split: train
+  n_samples: 256
+  max_length: 512

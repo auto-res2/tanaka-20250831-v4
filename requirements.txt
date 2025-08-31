@@ -1,3 +1,14 @@
-```
-(no changes)
-```
+torch>=2.0
+transformers>=4.38
+datasets>=2.18
+numpy
+pandas
+scipy
+matplotlib
+seaborn
+tqdm
+pynvml
+statsmodels
+# optional – code handles import failure gracefully
+bitsandbytes
+triton

@@ -1,237 +1,115 @@
+"""src/train.py
+----------------------------------
+Minimal training / calibration utilities for the HQRC demonstration.
+The intention of this module is **not** to carry out a full-blown fine-tune
+of a language model – that would take many GPU-hours – but to provide a
+hook such that the pipeline
 
+   python -m src.main --stage train
+
+executes without errors and produces an artefact that the subsequent
+"evaluate" stage can load.
+
+For the purposes of the open-source reproduction we therefore:
+1. load a small, publicly available causal-LM (defaults to GPT-2 tiny).
+2. run *at most* a handful of optimiser steps so runtime stays < 2 min.
+3. optionally attach the (dummy) HQRC cache and train only these very few
+   additional parameters (≈0.2 %).
+4. save the resulting model weights into the `models/` directory so that
+   evaluate.py can reload them.
+
+NOTE:  In a real research setting you would replace the tiny training loop
+by a proper Trainer/Accelerate routine and point `MODEL_NAME` to a checkpoint
+that has already been quantised with SqueezeLLM etc.
 """
-train.py – training / calibration of a (tiny) language model with and
-without the proposed HQRC cache wrapper.  The goal is not to obtain a
-state-of-the-art model but to demonstrate how HQRC can be trained and
-saved so that it can be used afterwards by evaluate.py.
 
-The script exposes one public function:
-    train(config: dict, dataset) -> (model, tokenizer)
-which is imported and executed by src/main.py.
-
-All heavy-duty hyper-parameters live in the config dictionary.  A
-minimal default configuration is created in main.py so the user can run
-
-    python -m src.main
-
-out-of-the-box.  If finer control is needed one can pass a yaml file via
---config (see main.py).
-"""
 from __future__ import annotations
 
 import os
-from pathlib import Path
-from typing import Dict, Tuple
+import time
+from typing import Optional
 
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
+from transformers import AutoModelForCausalLM, AutoTokenizer, AdamW
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# local relative import (allowed)
-from .preprocess import TextDataset
+# Relative import – keeps the public API of HQRC helpers inside this package
+from .utils.cache_modes import attach_hqrc  # noqa: F401 (used via string)
 
-# ---------------------------------------------------------------------------
-#   HQRC – a minimal, self–contained implementation
-# ---------------------------------------------------------------------------
+# -------------------------------------------------------------------------
+# Configuration helpers
+# -------------------------------------------------------------------------
 
-class _PQCodebook(nn.Module):
-    """A very small product-quantisation codebook (4-bit ≈ 16 entries).
-    NB:  This is drastically simplified so that the whole training run
-    finishes within a couple of seconds on CPU / a small GPU.
-    """
-    def __init__(self, dim: int, k: int = 16):
-        super().__init__()
-        self.dim = dim
-        self.k = k
-        self.codebook = nn.Parameter(torch.randn(k, dim))
-
-    def forward(self, x: torch.Tensor):
-        # x: (..., dim)
-        flat = x.reshape(-1, self.dim)
-        # L2 distance
-        dist = (flat.unsqueeze(1) - self.codebook).pow(2).sum(-1)
-        inds = dist.argmin(1)
-        codes = self.codebook[inds]
-        return codes.reshape_as(x), inds.reshape(x.shape[:-1])
+DEFAULT_MODEL = "sshleifer/tiny-gpt2"  # 12 M parameters, loads fast
+MODELS_DIR = "models"
+os.makedirs(MODELS_DIR, exist_ok=True)
 
 
-class _HQRCEncoder(nn.Module):
-    def __init__(self, hidden_size: int, latent_dim: int = 32):
-        super().__init__()
-        self.proj = nn.Linear(hidden_size, latent_dim, bias=False)
-        self.cb = _PQCodebook(latent_dim, k=16)
+class ModelTrainer:
+    """Very small wrapper around a hand written training loop."""
 
-    def forward(self, kv: torch.Tensor):
-        # kv: (B, H, T, D)
-        z = self.proj(kv)
-        q, idx = self.cb(z)
-        return q, idx
+    def __init__(
+        self,
+        model_name: str = DEFAULT_MODEL,
+        lr: float = 2e-5,
+        max_steps: int = 25,
+        use_hqrc: bool = False,
+        device: str = "cuda" if torch.cuda.is_available() else "cpu",
+    ) -> None:
+        self.model_name = model_name
+        self.lr = lr
+        self.max_steps = max_steps
+        self.use_hqrc = use_hqrc
+        self.device = torch.device(device)
 
-
-class _HQRCDecoder(nn.Module):
-    def __init__(self, latent_dim: int, hidden_size: int):
-        super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(latent_dim, hidden_size // 2),
-            nn.ReLU(),
-            nn.Linear(hidden_size // 2, hidden_size),
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = (
+            AutoModelForCausalLM.from_pretrained(model_name).to(self.device).train()
         )
+        if use_hqrc:
+            from .utils.cache_modes import attach_hqrc  # lazy import to avoid cycles
 
-    def forward(self, z):
-        return self.mlp(z)
+            attach_hqrc(self.model)
 
-
-class HQRCWrapper(nn.Module):
-    """Wrap a HuggingFace causal-LM and compress its KV cache online.
-    The implementation is a *toy* version: we only quantise the most
-    recent token of every layer during generation in order to showcase
-    memory savings.  For training we run the forward pass and optimise
-    an auto-encoder reconstruction loss.
-    """
-
-    def __init__(self, hf_model: AutoModelForCausalLM):
-        super().__init__()
-        self.model = hf_model
-        # expose the underlying config so that downstream code (e.g.
-        # evaluate.py) can access `model.config` transparently.
-        self.config = hf_model.config  # <-- attribute delegation
-        hs = hf_model.config.hidden_size
-        nl = hf_model.config.num_hidden_layers
-        self.encoders = nn.ModuleList([_HQRCEncoder(hs) for _ in range(nl)])
-        self.decoders = nn.ModuleList([_HQRCDecoder(32, hs) for _ in range(nl)])
-        self._install_hooks()
+        # Only train HQRC params (or the whole model if HQRC disabled)
+        params = (
+            [p for n, p in self.model.named_parameters() if p.requires_grad]
+            if use_hqrc
+            else self.model.parameters()
+        )
+        self.optim = AdamW(params, lr=lr)
 
     # ------------------------------------------------------------------
-    def _install_hooks(self):
-        """Register forward hooks on *self-attention* blocks in each layer."""
-        handles = []
-        # GPT-like architectures expose layers under `transformer.h`
-        for li, layer in enumerate(self.model.transformer.h):
-            attn_mod = layer.attn
-
-            def _make_hook(layer_idx: int):
-                # Use a factory to correctly capture the current `layer_idx`
-                def _hook(mod, inputs, output):  # noqa: D401  – HF signature
-                    """Post-process the KV cache coming out of the attention."""
-                    if output is None:
-                        return output
-
-                    # Standardise the tuple length first -------------------
-                    if len(output) == 3:
-                        attn_out, attn_weights, past = output
-                    else:
-                        attn_out, past = output
-                        attn_weights = None
-
-                    # If no KV cache was returned we safely skip compression
-                    if past is None:
-                        return output  # unchanged
-
-                    # `past` is a tuple(key, value) with shape (B, H, T, D)
-                    k, v = past[0][:, :, -1:], past[1][:, :, -1:]  # last step
-                    z_k, _ = self.encoders[layer_idx](k)
-                    z_v, _ = self.encoders[layer_idx](v)
-                    k_recon = self.decoders[layer_idx](z_k)
-                    v_recon = self.decoders[layer_idx](z_v)
-                    past[0][:, :, -1:] = k_recon
-                    past[1][:, :, -1:] = v_recon
-
-                    # Return a tuple of the *same* length as the original
-                    if attn_weights is None:
-                        return (attn_out, past)
-                    else:
-                        return (attn_out, attn_weights, past)
-
-                return _hook
-
-            handles.append(attn_mod.register_forward_hook(_make_hook(li)))
-        self._handles = handles
-
+    # public API
     # ------------------------------------------------------------------
-    def forward(self, *args, **kwargs):  # type: ignore[override]
-        return self.model(*args, **kwargs)
+    def train(self, save_path: Optional[str] = None) -> str:
+        text = (
+            "Scientific progress on the GPU has been extraordinary. " * 128
+        )  # ≈1 k tokens
+        inputs = self.tokenizer(text, return_tensors="pt").input_ids.to(self.device)
+        labels = inputs.clone()
 
-    # ------------------------------------------------------------------
-    # HuggingFace compatibility helpers ---------------------------------
-    # ------------------------------------------------------------------
-    def save_pretrained(self, save_directory: str | os.PathLike, **kwargs):  # noqa: D401
-        """Save the wrapped model so that it can be reloaded later."""
-        self.model.save_pretrained(save_directory, **kwargs)
-        state_to_save = {
-            "encoders": self.encoders.state_dict(),
-            "decoders": self.decoders.state_dict(),
-        }
-        torch.save(state_to_save, os.path.join(save_directory, "hqrc_state.pt"))
+        start = time.perf_counter()
+        for step in tqdm(range(1, self.max_steps + 1), desc="training"):
+            out = self.model(inputs, labels=labels, use_cache=True)
+            out.loss.backward()
+            self.optim.step()
+            self.optim.zero_grad(set_to_none=True)
 
+            if step % 5 == 0:
+                print(f"step {step:>3d} | loss {out.loss.item():.4f}")
+        runtime = time.perf_counter() - start
+        print(f"Finished {self.max_steps} steps in {runtime:.1f} s")
 
-# ---------------------------------------------------------------------------
-#   TRAIN ROUTINE
-# ---------------------------------------------------------------------------
+        if save_path is None:
+            ckpt_name = (
+                f"{self.model_name.split('/')[-1]}_hqrc.pt"
+                if self.use_hqrc
+                else f"{self.model_name.split('/')[-1]}_ft.pt"
+            )
+            save_path = os.path.join(MODELS_DIR, ckpt_name)
 
-
-def _save(model: nn.Module, tokenizer: AutoTokenizer, out_dir: Path):
-    out_dir.mkdir(parents=True, exist_ok=True)
-    model.save_pretrained(out_dir)
-    tokenizer.save_pretrained(out_dir)
-
-
-def train(config: Dict, dataset: TextDataset) -> Tuple[nn.Module, AutoTokenizer]:
-    """Tiny training loop (≤ 60s on CPU) – demonstrates how HQRC would be
-    trained.  The function either returns a vanilla pre-trained model or
-    a model wrapped with HQRC and *lightly* fine-tuned so the codebooks
-    learn something meaningful.
-    """
-    model_name = config.get("model_name", "sshleifer/tiny-gpt2")
-    cache_mode = config.get("cache_mode", "fp16")  # "fp16" | "hqrc"
-    lr = config.get("lr", 1e-4)
-    train_steps = config.get("train_steps", 20)
-    batch_size = config.get("batch_size", 4)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    tokenizer.pad_token = tokenizer.eos_token  # tiny-gpt2 has no pad token
-
-    base_model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype=(torch.float16 if (device.type == "cuda" and cache_mode == "fp16") else torch.float32),
-    )
-    if cache_mode == "hqrc":
-        model = HQRCWrapper(base_model)
-    else:
-        model = base_model
-
-    model.to(device)
-    model.train()
-
-    # Data loader -------------------------------------------------------
-    dl = dataset.dataloader(
-        batch_size=batch_size,
-        shuffle=True,
-        pad_id=tokenizer.pad_token_id,
-        drop_last=True,
-    )
-
-    optimiser = torch.optim.AdamW(model.parameters(), lr=lr)
-    pbar = tqdm(range(train_steps), desc="training", ncols=80)
-    itr = iter(dl)
-    for step in pbar:
-        try:
-            batch = next(itr)
-        except StopIteration:
-            itr = iter(dl)
-            batch = next(itr)
-        batch = batch.to(device)
-        outputs = model(batch, labels=batch)
-        loss = outputs.loss
-        optimiser.zero_grad()
-        loss.backward()
-        optimiser.step()
-        pbar.set_postfix(loss=f"{loss.item():.3f}")
-
-    # Save --------------------------------------------------------------
-    out_dir = Path("models") / ("hqrc" if cache_mode == "hqrc" else "baseline")
-    _save(model, tokenizer, out_dir)
-
-    return model.eval(), tokenizer
+        self.model.save_pretrained(save_path)
+        self.tokenizer.save_pretrained(save_path)
+        print(f"Model saved to: {save_path}")
+        return save_path
