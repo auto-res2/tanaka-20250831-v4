@@ -95,8 +95,12 @@ def run_pipeline(config: Dict):
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="HQRC demo pipeline")
-    parser.add_argument("--config", type=str, default=None,
-                        help="Yaml file with parameters. If omitted, default tiny config is used.")
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Yaml file with parameters. If omitted, default tiny config is used.",
+    )
     args = parser.parse_args()
 
     cfg = dict(_DEFAULT_CONFIG)

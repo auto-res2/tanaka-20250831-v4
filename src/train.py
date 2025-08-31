@@ -160,7 +160,10 @@ def train(config: Dict, dataset: TextDataset) -> Tuple[nn.Module, AutoTokenizer]
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token  # tiny-gpt2 has no pad token
 
-    base_model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16 if device.type == "cuda" else torch.float32)
+    base_model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        torch_dtype=torch.float16 if device.type == "cuda" else torch.float32,
+    )
     if cache_mode == "hqrc":
         model = HQRCWrapper(base_model)
     else:
@@ -170,7 +173,12 @@ def train(config: Dict, dataset: TextDataset) -> Tuple[nn.Module, AutoTokenizer]
     model.train()
 
     # Data loader -------------------------------------------------------
-    dl = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+    dl = dataset.dataloader(
+        batch_size=batch_size,
+        shuffle=True,
+        pad_id=tokenizer.pad_token_id,
+        drop_last=True,
+    )
 
     optimiser = torch.optim.AdamW(model.parameters(), lr=lr)
     pbar = tqdm(range(train_steps), desc="training", ncols=80)

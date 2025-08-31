@@ -31,8 +31,35 @@ class TextDataset(Dataset):
     def __getitem__(self, idx):
         return torch.tensor(self.data[idx], dtype=torch.long)
 
-    def dataloader(self, batch_size: int = 4, shuffle: bool = False):
-        return DataLoader(self, batch_size=batch_size, shuffle=shuffle, drop_last=False)
+    # -------------------------------------------------------------------
+    # custom DataLoader with padding to the longest sequence in the batch
+    # -------------------------------------------------------------------
+    @staticmethod
+    def _make_collate_fn(pad_id: int):
+        def _collate(batch):
+            max_len = max(len(seq) for seq in batch)
+            out = torch.full((len(batch), max_len), pad_id, dtype=torch.long)
+            for i, seq in enumerate(batch):
+                out[i, : len(seq)] = seq
+            return out
+
+        return _collate
+
+    def dataloader(
+        self,
+        batch_size: int = 4,
+        shuffle: bool = False,
+        pad_id: int = 0,
+        drop_last: bool = False,
+    ):
+        collate_fn = self._make_collate_fn(pad_id)
+        return DataLoader(
+            self,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            collate_fn=collate_fn,
+        )
 
 # ---------------------------------------------------------------------------
 
@@ -53,7 +80,9 @@ def preprocess(config: Dict) -> TextDataset:
     max_samples = config.get("max_samples", 512)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="validation[:{}]".format(max_samples))
+    dataset = load_dataset(
+        "wikitext", "wikitext-2-raw-v1", split="validation[:{}]".format(max_samples)
+    )
     token_ids = []
     for item in dataset:
         ids = tokenizer(item["text"], truncation=True, max_length=128)["input_ids"]
