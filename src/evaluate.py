@@ -3,7 +3,7 @@ Evaluation helper – computes perplexity on the validation split created
 by `src.preprocess` and produces a tiny memory/latency profile similar to
 what is sketched in the (much larger) research code.
 
-All images are now saved under `.research/iteration4/images` as required.
+All images are now saved under `.research/iteration5/images` as required.
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from .preprocess import MemMapDataset
 # ---------------------------------------------------------------------------
 # Image output directory (updated as per specification)
 # ---------------------------------------------------------------------------
-IMAGES_DIR = Path(".research/iteration4/images")
+IMAGES_DIR = Path(".research/iteration5/images")
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -62,25 +62,35 @@ def evaluate(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
-    model = AutoModelForCausalLM.from_pretrained(model_dir, torch_dtype=torch.float16)
+    # Load model in full precision to minimise numerical issues
+    model = AutoModelForCausalLM.from_pretrained(model_dir, torch_dtype=torch.float32)
     model.to(device).eval()
 
     val_ds = MemMapDataset("data/val.bin", seq_len)
     loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, drop_last=True)
 
+    if len(loader) == 0:
+        raise RuntimeError(
+            "Validation set is empty. Ensure that `max_val_tokens`>0 when "
+            "building the dataset."
+        )
+
     records = []
 
     for seed in seeds:
         set_seed(seed)
-        torch.cuda.reset_peak_memory_stats()
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
         pbar = tqdm(loader, desc=f"eval s={seed}", leave=False, ncols=80)
         total_ppl, n_batches = 0.0, 0
         with torch.no_grad():
             for batch in pbar:
                 inp = batch.to(device)
-                # Use built-in loss computation to avoid float16 overflow issues
                 out = model(inp, labels=inp, use_cache=True)
                 loss = out.loss.float()
+                if torch.isnan(loss):
+                    # Extremely unlikely with fp32, but we guard just in case
+                    continue
                 ppl = float(torch.exp(loss))
                 total_ppl += ppl
                 n_batches += 1

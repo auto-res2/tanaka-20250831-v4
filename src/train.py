@@ -10,15 +10,18 @@ Workflow
 1.  `src.preprocess.run()` builds a tokenised mem-mapped dataset if it is
     not already present under `data/`.
 2.  Here we load that dataset, build a very small GPT-2 model (124 M
-    parameters) in half-precision and fine-tune it for **one epoch**
-    (≈3 k optimisation steps with the default settings below).
+    parameters) **in full precision** (float32) and fine-tune it for
+    **one epoch** (≈3 k optimisation steps with the default settings
+    below).  We avoid fp16 here because the very small batch size means
+    the extra memory savings are negligible while half-precision can
+    sometimes lead to NaNs during training on consumer GPUs.
 3.  The model checkpoint and optimiser-state are stored under
     `models/gpt2-wikitext2`.
 
 The code purposefully keeps the implementation minimal – there is no
-mixed-precision wizardry, distributed training, nor gradient accumulation
-beyond a simple configurable micro-batch size.  This keeps the script
-readable and robust for the automatic grader.
+mixed-precision wizardry, distributed training, nor gradient
+accumulation beyond a simple configurable micro-batch size.  This keeps
+the script readable and robust for the automatic grader.
 """
 from __future__ import annotations
 
@@ -114,8 +117,10 @@ def train(config: Dict[str, Any] | None = None):
     # ---------------------------------------------------------------------
     # 2) Model, optimiser, LR-schedule
     # ---------------------------------------------------------------------
+    # NOTE: we stick to float32 to avoid potential overflow/NaNs that were
+    # observed with fp16 in earlier runs.
     model = AutoModelForCausalLM.from_pretrained(
-        config["model_name"], torch_dtype=torch.float16
+        config["model_name"], torch_dtype=torch.float32
     )
     model.resize_token_embeddings(len(tokenizer))
     model.to(device)
@@ -142,6 +147,12 @@ def train(config: Dict[str, Any] | None = None):
             tgt = inp.clone()
             outputs = model(inp, labels=tgt)
             loss: torch.Tensor = outputs.loss
+
+            # Guard against NaNs – skip update if they occur (extremely rare
+            # with fp32 but inexpensive to check).
+            if torch.isnan(loss):
+                print("⚠️  Skipping step due to NaN loss")
+                continue
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
