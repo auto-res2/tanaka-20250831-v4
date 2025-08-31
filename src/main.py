@@ -34,7 +34,7 @@ from .utils.plotting import save_pdf
 from .utils.cache_modes import CACHE_MODES  # noqa: F401 (side-effect printing)
 
 # directory for images dictated by the instructions
-IMG_DIR = ".research/iteration13/images"  # Updated as per instructions
+IMG_DIR = ".research/iteration14/images"  # Updated as per instructions
 os.makedirs(IMG_DIR, exist_ok=True)
 
 
@@ -91,7 +91,7 @@ def main():
         trainer.train()
     elif args.stage == "eval":
         # Requires that a checkpoint exists already
-        ckpt = os.path.join("models", "tiny-gpt2_hqrc.pt")
+        ckpt = os.path.join("models", "tiny-gpt2_hqrc")
         if not os.path.isdir(ckpt):
             raise FileNotFoundError(
                 "Checkpoint not found – please run with --stage train first."

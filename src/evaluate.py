@@ -52,10 +52,12 @@ def latency_and_memory(
     decode_tokens: int = 128,
 ) -> Dict[str, float]:
     ids = tokenizer(prompt, return_tensors="pt").input_ids.to(model.device)
-    torch.cuda.synchronize()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
     t0 = time.perf_counter()
     _ = model(ids, use_cache=True)
-    torch.cuda.synchronize()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
     prefill = (time.perf_counter() - t0) * 1e3  # ms
 
     # autoregressive decode
@@ -65,7 +67,8 @@ def latency_and_memory(
         t1 = time.perf_counter()
         out = model(next_ids, use_cache=True)
         next_ids = out.logits[:, -1].argmax(-1, keepdim=True)
-        torch.cuda.synchronize()
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
         times.append((time.perf_counter() - t1) * 1e3)
     return {
         "prefill_ms": prefill,
@@ -85,7 +88,7 @@ def run_single(
 ):
     tokenizer = AutoTokenizer.from_pretrained(model_ckpt)
     model = (
-        AutoModelForCausalLM.from_pretrained(model_ckpt).eval().cuda()
+        AutoModelForCausalLM.from_pretrained(model_ckpt).eval().to("cuda" if torch.cuda.is_available() else "cpu")
     )
     model = CACHE_FUNCS[cache_mode](model)
 

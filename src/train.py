@@ -104,9 +104,7 @@ class ModelTrainer:
 
         if save_path is None:
             ckpt_name = (
-                f"{self.model_name.split('/')[-1]}_hqrc.pt"
-                if self.use_hqrc
-                else f"{self.model_name.split('/')[-1]}_ft.pt"
+                f"{self.model_name.split('/')[-1]}_hqrc" if self.use_hqrc else f"{self.model_name.split('/')[-1]}_ft"
             )
             save_path = os.path.join(MODELS_DIR, ckpt_name)
 
